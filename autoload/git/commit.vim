@@ -223,5 +223,5 @@ function git#commit#popup_menu(cmd_options, action) abort
 		call win_execute(l:popupid, 'setlocal syn=git_commit_popup')
 	endif
 endfunction
-autocmd CursorHold Commit:* call git#commit#fake_click()
+autocmd CursorMoved Commit:* call git#commit#fake_click()
 
