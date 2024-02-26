@@ -212,7 +212,6 @@ function git#commit#popup_menu(cmd_options, action) abort
 			\ 'scrollbar': 1,
 			\ 'maxheight': 15
 		\})
-		call win_execute(l:popupid, 'syntax enable')
 		call win_execute(l:popupid, 'setlocal syn=git_commit_popup')
 	endif
 endfunction
