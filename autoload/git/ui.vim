@@ -3,12 +3,12 @@ function Bufputtext(text) abort
 	if get(l:text, 0) =~"\r$"
 		setlocal ff=dos
 		for l:lineid in range(len(l:text))
-			call append(l:lineid, trim(l:text[l:lineid], "\r", 2))
+			let l:text[l:lineid] = trim(l:text[l:lineid], "\r", 2)
 		endfor
 	else
 		setlocal ff=unix
-		call append(0, l:text)
 	endif
+	call append(0, l:text)
 endfunction
 function git#ui#win_apply_options(options) abort
 	if type(a:options) == type(v:null)
