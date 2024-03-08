@@ -16,7 +16,7 @@ function git#ui#win_apply_options(options) abort
 	endif
 	let l:modifiable = exists("a:options['modifiable']") ? a:options['modifiable'] : v:false
 	if exists("a:options['file']")
-		execute 'open '.a:options['file']
+		execute 'silent open '.a:options['file']
 	else
 		if exists("a:options['name']")
 			execute 'file '.a:options['name']
@@ -80,3 +80,78 @@ function git#ui#split_three(top, bleft, bright, base_winid) abort
 	endif
 endfunction
 
+function git#ui#listTabs(tabname) abort
+	let l:tabs = []
+	let l:tabname = ''
+	let l:tab = {}
+	let l:tabwins = []
+	let l:tabwin = {}
+	let l:tabindex = 0
+	for l:line in split(execute('tabs'), "\n")
+		if l:line =~ '^Tab page '
+			if l:tabname != ''
+				if a:tabname == '' || a:tabname == l:tabname
+					call add(l:tabs, {
+						\ 'name': l:tabname,
+						\ 'index': l:tabindex,
+						\ 'wins': l:tabwins
+					\ })
+					let l:tabwins = []
+					let l:tabname = ''
+				endif
+			endif
+			let l:tabindex += 1
+		else
+			if empty(l:tabwins)
+				let l:tabname = l:line[4:]
+			endif
+			if a:tabname == '' || a:tabname == l:tabname
+				call add(l:tabwins, {
+					\ 'active': l:line[0] == '>',
+					\ 'modified': l:line[2] == '+',
+					\ 'name': l:line[4:]
+				\ })
+			endif
+		endif
+	endfor
+	if l:tabname != ''
+		if a:tabname == '' || a:tabname == l:tabname
+			call add(l:tabs, {
+				\ 'name': l:tabname,
+				\ 'index': l:tabindex,
+				\ 'wins': l:tabwins
+			\ })
+		endif
+	endif
+	return l:tabs
+endfunction
+function git#ui#openTab(tabname) abort
+	let l:tabs = git#ui#listTabs(a:tabname)
+	if empty(l:tabs)
+		silent tabnew
+		execute 'silent file '.a:tabname
+		return v:true
+	else
+		let l:tab = get(l:tabs, 0)
+		execute 'tabn'.l:tab['index']
+		return v:false
+	endif
+endfunction
+let s:loading_id = 0
+let s:loading_time = 0
+function git#ui#start_loading(name) abort
+	let s:loading_id = popup_notification('Loading... '.a:name, {
+		\ 'pos': 'center',
+		\ 'time':3000,
+	\ })
+	redraw!
+	let s:loading_time = localtime()
+	return s:loading_id
+endfunction
+function git#ui#end_loading(name) abort
+	call popup_close(s:loading_id)
+	if localtime() - s:loading_time > 100
+		call popup_notification('Loaded '.a:name, {'pos': 'center','time':500})
+		redraw!
+	endif
+endfunction

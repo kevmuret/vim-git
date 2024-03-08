@@ -62,9 +62,9 @@ function git#commit#parse_file(line) abort
 	elseif a:line =~ '^new file mode '
 		let s:parsed_commit['files'][s:parsed_commit['nfiles'] - 1]['type'] = 'new'
 	elseif a:line =~'^rename from '
-		let s:parsed_commit['files'][s:parsed_commit['nfiles'] - 1]['old_path'] = a:line[12:]
-	elseif a:line =~'^rename to '
 		" Ignore this line
+	elseif a:line =~'^rename to '
+		let s:parsed_commit['files'][s:parsed_commit['nfiles'] - 1]['old_path'] = a:line[12:]
 	elseif a:line =~ '^deleted file mode '
 		let s:parsed_commit['files'][s:parsed_commit['nfiles'] - 1]['type'] = 'delete'
 	elseif a:line =~ '^index '
@@ -80,6 +80,7 @@ function git#commit#show_diff(lineid) abort
 	let l:line = split(getline(a:lineid), "\t")
 	let l:commit_hash = get(split(getline(1), ' '), 1)
 	if l:line[0] =~ '^│🖉'
+		call git#ui#start_loading(l:line[1])
 		let l:hashes = split(l:line[1], '\.\.')
 		let l:bleft_text = git#system#call('show '.l:hashes[0])
 		let l:bright_text = git#system#call('show '.l:hashes[1])
@@ -95,8 +96,10 @@ function git#commit#show_diff(lineid) abort
 		call win_gotoid(win_getid(3))
 		difft
 		filetype detect
+		call git#ui#end_loading(l:line[1])
 		return v:true
 	elseif l:line[0] =~ '^│+'
+		call git#ui#start_loading(l:line[1])
 		let l:hashes = split(l:line[1], '\.\.')
 		let l:bright_text = git#system#call('show '.l:hashes[1])
 		call git#ui#split_three(s:null, {
@@ -110,8 +113,10 @@ function git#commit#show_diff(lineid) abort
 		call win_gotoid(win_getid(3))
 		difft
 		filetype detect
+		call git#ui#end_loading(l:line[1])
 		return v:true
 	elseif l:line[0] =~ '^│-'
+		call git#ui#start_loading(l:line[1])
 		let l:hashes = split(l:line[1], '\.\.')
 		let l:bleft_text = git#system#call('show '.l:hashes[0])
 		call git#ui#split_three(s:null, {
@@ -125,16 +130,16 @@ function git#commit#show_diff(lineid) abort
 		call win_gotoid(win_getid(3))
 		difft
 		filetype detect
+		call git#ui#end_loading(l:line[1])
 		return v:true
 	endif
 	return v:false
 endfunction
-let s:commit_windows = {}
 function git#commit#show(hash) abort
 	let l:commit_bufname = 'Commit: '.a:hash
-	if !exists('s:commit_windows[l:commit_bufname]')
-		\ || win_gotoid(s:commit_windows[l:commit_bufname]) == 0
-		echo 'Loading commit '.a:hash
+	if git#ui#openTab(l:commit_bufname)
+		call git#ui#start_loading(l:commit_bufname)
+		"TODO Display minimal output with 'show --date=local --raw '.a:hash
 		let l:git_commit = git#system#call_list('show --date=local '.a:hash)
 		let s:parser_state = git#commit#parse_init()
 		for l:line in l:git_commit
@@ -158,10 +163,11 @@ function git#commit#show(hash) abort
 			if l:file['old_path'] != ''
 				let l:top_text .= "│\t\t\trenamed from: ".l:file['old_path']."\n"
 			endif
-			let l:top_text .= l:file['diff']."\n"
+			if l:file['diff'] != ''
+				let l:top_text .= l:file['diff']."\n"
+			endif
 		endfor
 		let l:top_text .= "│\n└"
-		tabnew
 		call git#ui#split_three({
 			\ 'text': l:top_text,
 			\ 'name': l:commit_bufname
@@ -171,8 +177,7 @@ function git#commit#show(hash) abort
 		setlocal fdm=expr
 		setlocal foldexpr=getline(v:lnum)=~'^[┌│└]'?0:1
 		setlocal syn=git_commit
-		echo 'Loaded commit '.a:hash
-		let s:commit_windows[l:commit_bufname] = l:commit_winid
+		call git#ui#end_loading(l:commit_bufname)
 	endif
 endfunction
 function git#commit#fix_filetype_detect(...) abort
