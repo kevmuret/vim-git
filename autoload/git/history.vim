@@ -4,13 +4,14 @@ endfunction
 function git#history#file(file_path) abort
 	call git#commit#popup_menu('-- '.a:file_path, 'show')
 endfunction
-let s:history_windows = {}
 function git#history#graph(...) abort
 	if a:0 == 0
 		let l:history_args = '--all'
 	else
 		let l:history_args = join(a:000, ' ')
 	endif
+	let l:history_bufname = 'Git graph: '.l:history_args
+	call git#ui#start_loading(l:history_bufname)
 	let l:history = git#system#call_list("log --graph --pretty='%d %h <%an>	%ad	%s' --date='format:%Y-%m-%d %H:%M:%S' ".l:history_args)
 	let l:history_list = []
 	for l:history_line in l:history
@@ -23,15 +24,11 @@ function git#history#graph(...) abort
 			call add(l:history_list, l:history_line)
 		endif
 	endfor
-	let l:history_bufname = 'Git graph: '.l:history_args
-	if !exists('s:history_windows[l:history_bufname]')
-		\ || win_gotoid(s:history_windows[l:history_bufname]) == 0
-		tabnew
+	if git#ui#openTab(l:history_bufname)
 		setlocal noswapfile
 		setlocal nobuflisted
 		setlocal buftype=nofile
 		execute 'file '.l:history_bufname
-		let s:history_windows[l:history_bufname] = win_getid()
 	endif
 	setlocal ma
 	%delete _
@@ -39,6 +36,7 @@ function git#history#graph(...) abort
 	setlocal noma
 	setlocal syn=git_graph
 	normal gg
+	call git#ui#end_loading(l:history_bufname)
 endfunction
 let s:last_chr = ''
 function s:FollowGraphHorizontalBar(linenr, colnr, line, dir) abort
