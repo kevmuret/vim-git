@@ -145,6 +145,9 @@ function s:FollowGraph(linenr, colnr, dir) abort
 	execute l:syn_cmd
 	return l:syn_colnr
 endfunction
+if !exists('g:git_history_max_follow_graph')
+	let g:git_history_max_follow_graph = 100
+endif
 function git#history#fake_click()
 	let l:linenr = line('.')
 	let l:colnr = col('.')
@@ -164,7 +167,7 @@ function git#history#fake_click()
 		let l:syn_colnr = l:colnr
 		let s:last_chr = '|'
 		let l:syn_dir = 1
-		for l:syn_linenr in reverse(range(1, l:linenr))
+		for l:syn_linenr in reverse(range(max([1, l:linenr - g:git_history_max_follow_graph]), l:linenr))
 			let l:syn_colnr = s:FollowGraph(l:syn_linenr, l:syn_colnr, l:syn_dir)
 			if l:syn_colnr < 0
 				break
@@ -173,7 +176,7 @@ function git#history#fake_click()
 		let s:last_chr = '|'
 		let l:syn_colnr = col('.')
 		let l:syn_dir = -1
-		for l:syn_linenr in range(l:linenr, line('$'))
+		for l:syn_linenr in range(l:linenr, min([line('$'), l:linenr + g:git_history_max_follow_graph]))
 			let l:syn_colnr = s:FollowGraph(l:syn_linenr, l:syn_colnr, l:syn_dir)
 			if l:syn_colnr < 0
 				break
