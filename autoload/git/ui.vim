@@ -137,6 +137,7 @@ function git#ui#openTab(tabname) abort
 		return v:false
 	endif
 endfunction
+
 let s:loading_id = 0
 let s:loading_time = 0
 function git#ui#start_loading(name) abort
@@ -155,3 +156,20 @@ function git#ui#end_loading(name) abort
 		redraw!
 	endif
 endfunction
+
+function git#ui#on_dbl_click(namespace) abort
+	let l:Fn = funcref('git#'.a:namespace.'#on_dbl_click')
+	let l:linenr = line('.')
+	let l:synstack = synstack(l:linenr, col('.'))
+	if len(l:synstack) < 1
+		return
+	endif
+	let l:syn_name = synIDattr(l:synstack[len(l:synstack) - 1], 'name')
+	if l:Fn(l:syn_name, getline(l:linenr)[col("'<") - 1:col("'>") - 1])
+	endif
+	unmap <2-LeftRelease>
+endfunction
+function git#ui#dbl_click(ftmatch, namespace) abort
+	execute 'autocmd CursorMoved '.a:ftmatch.' noremap <2-LeftRelease> :GitUIDBLClick '.a:namespace.'<CR><ESC>'
+endfunction
+command! -range -nargs=1 GitUIDBLClick call git#ui#on_dbl_click(<f-args>)

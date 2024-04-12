@@ -180,12 +180,6 @@ function git#commit#show(hash) abort
 		call git#ui#end_loading(l:commit_bufname)
 	endif
 endfunction
-function git#commit#fix_filetype_detect(...) abort
-	filetype detect
-	call win_gotoid(win_getid(1))
-	call setpos('.', [0, line('.'), 1])
-	redraw!
-endfunction
 let s:popup_commits = []
 function git#commit#popup_action_show(popup_id, commit_id) abort
 	if a:commit_id != -1
@@ -196,18 +190,6 @@ function git#commit#popup_action_show(popup_id, commit_id) abort
 				break
 			endif
 		endfor
-	endif
-endfunction
-function git#commit#fake_click() abort
-	let l:linenr = line('.')
-	let l:synstack = synstack(l:linenr, col('.'))
-	if len(l:synstack) < 1
-		return
-	endif
-	if synIDattr(l:synstack[len(l:synstack) - 1], 'name') == 'gitCommitHash'
-		if git#commit#show_diff(l:linenr)
-			call timer_start(1, function('git#commit#fix_filetype_detect'))
-		endif
 	endif
 endfunction
 function git#commit#popup_menu(cmd_options, action) abort
@@ -228,5 +210,14 @@ function git#commit#popup_menu(cmd_options, action) abort
 		call win_execute(l:popupid, 'setlocal syn=git_commit_popup')
 	endif
 endfunction
-autocmd CursorMoved Commit:* call git#commit#fake_click()
+
+function git#commit#on_dbl_click(synname, wordsel) abort
+	let l:linenr = line('.')
+	if a:synname == 'gitCommitHashes' || a:synname == 'gitCommit3Hashes'
+		call git#commit#show_diff(l:linenr)
+	elseif a:synname == 'gitCommitHash'
+		call git#commit#show(a:wordsel)
+	endif
+endfunction
+call git#ui#dbl_click('Commit:*', 'commit')
 
