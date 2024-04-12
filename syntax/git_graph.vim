@@ -6,9 +6,7 @@ runtime! syntax/git_common.vim
 
 syn region gitGraphLine	oneline keepend start="^" end="$" contains=@gitGraphCluster
 syn cluster gitGraphCluster contains=gitGraph,gitGraphRef,gitGraphDate,gitGraphAuthor,gitGraphMessage,gitGraphHash
-"syn match gitGraph	"^\([\*\|][ _\\/]\)\+"
 syn region gitGraph	oneline start="^" end="  " contains=gitGraphHL
-"syn match gitGraph	"^[*| \_/]\+ "
 syn match gitGraphAuthor	"<.\+>"
 syn match gitGraphHash	"[0-9a-f]\+"
 syn match gitGraphDate	"[0-9]\{4}-[0-9]\{2}-[0-9]\{2} [0-9]\{2}:[0-9]\{2}:[0-9]\{2}"

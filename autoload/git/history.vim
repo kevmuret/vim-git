@@ -148,22 +148,16 @@ endfunction
 if !exists('g:git_history_max_follow_graph')
 	let g:git_history_max_follow_graph = 100
 endif
-function git#history#fake_click()
-	let l:linenr = line('.')
-	let l:colnr = col('.')
-	let l:synstack = synstack(l:linenr, l:colnr)
-	syn clear
-	runtime syntax/git_graph.vim
-	if len(l:synstack) < 1
-		return
-	endif
-	let l:synname = synIDattr(l:synstack[len(l:synstack) - 1], 'name')
-	if l:synname == 'gitGraphHash'
+
+function git#history#on_dbl_click(synname, wordsel) abort
+	if a:synname == 'gitGraphHash'
 		let l:hash = expand('<cword>')
-		call setpos('.', [0, line('.'), 1])
+		"call setpos('.', [0, line('.'), 1])
 		call git#commit#show(l:hash)
-	elseif getline('.')[col('.')-1] != ' ' && l:synname == 'gitGraph'
+	elseif getline('.')[col('.')-1] != ' ' && a:synname == 'gitGraph' || a:synname == 'gitGraphHL'
 		syn clear
+		let l:linenr = line('.')
+		let l:colnr = col('.')
 		let l:syn_colnr = l:colnr
 		let s:last_chr = '|'
 		let l:syn_dir = 1
@@ -182,8 +176,8 @@ function git#history#fake_click()
 				break
 			endif
 		endfor
-		"runtime syntax/git_graph.vim
 		runtime syntax/git_graph.vim
 	endif
 endfunction
-autocmd CursorMoved Git\ graph:* call git#history#fake_click()
+call git#ui#dbl_click('Git\ graph:*', 'history')
+	
