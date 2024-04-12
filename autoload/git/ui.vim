@@ -88,7 +88,7 @@ function git#ui#listTabs(tabname) abort
 	let l:tabwin = {}
 	let l:tabindex = 0
 	for l:line in split(execute('tabs'), "\n")
-		if l:line =~ '^Tab page '
+		if l:line =~ '^[^ >].\+\d\+$'
 			if l:tabname != ''
 				if a:tabname == '' || a:tabname == l:tabname
 					call add(l:tabs, {
