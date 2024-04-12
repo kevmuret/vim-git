@@ -79,6 +79,51 @@ function git#ui#split_three(top, bleft, bright, base_winid) abort
 		echoerr 'Invalid layout'
 	endif
 endfunction
+function git#ui#is_split_four_layout(layout) abort
+	return a:layout[0] == 'col' && len(a:layout[1]) == 2
+		\ && a:layout[1][0][0] == 'leaf'
+		\ && a:layout[1][1][0] == 'row'
+		\ && len(a:layout[1][1][1]) == 2
+		\ && a:layout[1][1][1][0][0] == 'col'
+		\ && len(a:layout[1][1][1][0][1]) == 2
+		\ && a:layout[1][1][1][0][1][0][0] == 'leaf'
+		\ && a:layout[1][1][1][0][1][1][0] == 'leaf'
+		\ && a:layout[1][1][1][1][0] == 'leaf'
+endfunction
+function git#ui#split_four(top, bleft1, bleft2, bright, base_winid) abort
+	let l:layout = winlayout()
+	if l:layout[0] == 'leaf'
+		call git#ui#win_apply_options(a:top)
+		new
+		call win_splitmove(a:base_winid + 1, a:base_winid)
+		call git#ui#win_apply_options(a:bleft2)
+		new
+		call win_splitmove(a:base_winid + 2, a:base_winid + 1, {'vertical':v:true})
+		call git#ui#win_apply_options(a:bright)
+		call win_gotoid(win_getid(a:base_winid + 1))
+		new
+		call git#ui#win_apply_options(a:bleft1)
+	elseif git#ui#is_split_four_layout(l:layout)
+		if type(a:top) != type(v:null)
+			call win_gotoid(win_getid(a:base_winid))
+			call git#ui#win_apply_options(a:top)
+		endif
+		if type(a:bleft1) != type(v:null)
+			call win_gotoid(win_getid(a:base_winid + 1))
+			call git#ui#win_apply_options(a:bleft1)
+		endif
+		if type(a:bleft2) != type(v:null)
+			call win_gotoid(win_getid(a:base_winid + 2))
+			call git#ui#win_apply_options(a:bleft2)
+		endif
+		if type(a:bright) != type(v:null)
+			call win_gotoid(win_getid(a:base_winid + 3))
+			call git#ui#win_apply_options(a:bright)
+		endif
+	else
+		echoerr 'Invalid layout'
+	endif
+endfunction
 
 function git#ui#listTabs(tabname) abort
 	let l:tabs = []
