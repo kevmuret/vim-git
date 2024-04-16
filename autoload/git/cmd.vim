@@ -4,12 +4,12 @@ let s:git_cmd_chain_eof = 0
 let s:git_cmd_termid = 0
 let s:git_cmd_jobid = 0
 let s:git_cmd_bufnr = 0
-let s:git_cmd_errors = []
 let s:git_commands = {
 	\ 'switch': {
 		\ 'options': {
 			\ '-C': v:null,
 			\ '-c': v:null,
+			\ '--merge': v:null,
 		\ },
 		\ 'complete_func': 'git#branch#custom_list',
 	\ },
@@ -20,13 +20,9 @@ let s:git_commands = {
 		\ 'complete_func': 'git#branch#custom_list',
 	\ },
 	\ 'merge': {
-		\ 'options': {
-		\ },
 		\ 'complete_func': 'git#branch#custom_list',
 	\ },
 	\ 'checkout': {
-		\ 'options': {
-		\ },
 		\ 'complete_func': 'git#branch#custom_list',
 	\ },
 	\ 'add': {
@@ -36,11 +32,22 @@ let s:git_commands = {
 		\ 'complete_func': 'git#cmd#add_custom_list',
 	\ },
 	\ 'commit': {
-		\ 'term': v:true,
 		\ 'options': {
 			\'-m': v:null,
 		\ },
 	\ },
+	\ 'fetch': {
+		\ 'options': {
+			\ '--all': v:null,
+		\ },
+		\ 'complete_func': ['git#remote#custom_list', 'git#branch#custom_list'],
+	\},
+	\ 'pull': {
+		\ 'complete_func': ['git#remote#custom_list', 'git#branch#custom_list'],
+	\},
+	\ 'push': {
+		\ 'complete_func': ['git#remote#custom_list', 'git#branch#custom_list'],
+	\},
 \ }
 function s:cmd_exec(cmd, from) abort
 	if !exists('a:cmd[a:from]')
@@ -53,36 +60,23 @@ function s:cmd_exec(cmd, from) abort
 	endif
 	let l:eof_cmd = a:from
 	let l:cmd = ['git', a:cmd[a:from]]
-	let l:is_term = exists('s:git_commands[a:cmd[a:from]]["term"]') && s:git_commands[a:cmd[a:from]]['term']
 	for l:argid in range(a:from + 1, len(a:cmd) - 1)
 		if a:cmd[l:argid] == '&&' || a:cmd[l:argid] == '||'
 			break
 		endif
 		let l:eof_cmd += 1
 		call add(l:cmd, a:cmd[l:eof_cmd])
-		if a:cmd[l:argid] == '-i' || a:cmd[l:argid] == '--interactive' || a:cmd[l:argid] == '--help'
-			let l:is_term = v:true
-		endif
 	endfor
 	let s:git_cmd_last = l:cmd
 	let s:git_cmd_chain_eof = l:eof_cmd
 	let s:git_cmd_errors = []
-	if l:is_term
-		let s:git_cmd_termid = term_start(l:cmd, {
-			\ 'err_cb': funcref('s:cmd_error'),
-			\ 'exit_cb': funcref('s:cmd_exit'),
-			\ 'term_finish': 'close',
-			\ 'norestore': v:true,
-		\ })
-		let s:git_cmd_jobid = term_getjob(s:git_cmd_termid)
-	else
-		let s:git_cmd_termid = 0
-		let s:git_cmd_jobid = job_start(l:cmd, {
-			\ 'out_cb': funcref('s:cmd_output'),
-			\ 'err_cb': funcref('s:cmd_error'),
-			\ 'exit_cb': funcref('s:cmd_exit'),
-		\ })
-	endif
+	let s:git_cmd_termid = term_start(l:cmd, {
+		\ 'err_cb': funcref('s:cmd_error'),
+		\ 'exit_cb': funcref('s:cmd_exit'),
+		\ 'term_finish': 'open',
+		\ 'norestore': v:true,
+	\ })
+	let s:git_cmd_jobid = term_getjob(s:git_cmd_termid)
 endfunction
 function s:cmd_append_output(msg)
 	let l:winid = bufwinid(s:git_cmd_bufnr)
@@ -99,16 +93,10 @@ function s:cmd_append_output(msg)
 	endfor
 	call win_execute(l:winid, 'setlocal noma')
 endfunction
-function s:cmd_output(ch, msg)
+function s:cmd_error(ch, msg)
 	call s:cmd_append_output(': '.a:msg)
 endfunction
-function s:cmd_error(ch, msg)
-	call add(s:git_cmd_errors, ' says: '.a:msg)
-endfunction
 function s:cmd_exit(jobid, status)
-	if len(s:git_cmd_errors) > 0
-		call s:cmd_append_output(s:git_cmd_errors)
-	endif
 	if a:status != 0
 		call s:cmd_append_output(' returned with status: '.a:status)
 	endif
@@ -128,29 +116,13 @@ function s:cmd_exit(jobid, status)
 			return
 		endif
 		if l:continue_to > 0 && exists('s:git_cmd_chain[l:continue_to + 1]')
+			quit
 			call s:cmd_exec(s:git_cmd_chain, l:continue_to + 1)
+		elseif a:status == 0
+			quit
 		endif
-	endif
-endfunction
-function s:cmd_term_exit(jobid, status)
-	if exists('s:git_cmd_chain[s:git_cmd_chain_eof + 1]')
-		let l:oper = s:git_cmd_chain[s:git_cmd_chain_eof + 1]
-		let l:continue_to = 0
-		if l:oper == '&&'
-			if a:status == 0
-				let l:continue_to = s:git_cmd_chain_eof + 1
-			endif
-		elseif l:oper == '||'
-			if a:status != 0
-				let l:continue_to = s:git_cmd_chain_eof + 1
-			endif
-		else
-			echoerr 'Invalid operator "'.l:oper.'"'
-			return
-		endif
-		if l:continue_to > 0 && exists('s:git_cmd_chain[l:continue_to + 1]')
-			call s:cmd_exec(s:git_cmd_chain, l:continue_to + 1)
-		endif
+	elseif a:status == 0
+		quit
 	endif
 endfunction
 
@@ -179,6 +151,7 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 	let l:is_in_args = v:false
 	let l:cmd_name = ''
 	let l:opt_name = ''
+	let l:arg_num = -1
 	let l:pos = 0
 	let l:is_first = v:true
 	for l:arg in split(a:cmd, ' ')
@@ -195,8 +168,10 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 			let l:is_in_args = v:false
 			let l:cmd_name = ''
 			let l:opt_name = ''
+			let l:arg_num = -1
 		else
 			let l:is_in_args = v:true
+			let l:arg_num += 1
 			if l:arg =~ '^-'
 				let l:opt_name = l:arg
 			endif
@@ -208,6 +183,7 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 	endfor
 	if !l:is_bof_cmd && l:pos == a:curpos
 		let l:is_in_args = v:true
+		let l:arg_num += 1
 	endif
 	let l:choices = []
 	if !l:is_in_args
@@ -218,7 +194,16 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 		elseif l:opt_name != '' && exists('s:git_commands[l:cmd_name]["options"][l:opt_name]') && type(s:git_commands[l:cmd_name]["options"][l:opt_name]) != type(v:null)
 			let l:choices = call(s:git_commands[l:cmd_name]["options"][l:opt_name], [a:arglead, a:cmd, a:curpos])
 		elseif exists('s:git_commands[l:cmd_name]["complete_func"]')
-			let l:choices = call(s:git_commands[l:cmd_name]["complete_func"], [a:arglead, a:cmd, a:curpos])
+			let l:func_choices = v:null
+			if type(s:git_commands[l:cmd_name]["complete_func"]) == type([])
+				if exists('s:git_commands[l:cmd_name]["complete_func"][l:arg_num]')
+					echom l:arg_num
+					let l:func_choices = s:git_commands[l:cmd_name]["complete_func"][l:arg_num]
+				endif
+			else
+				let l:func_choices = s:git_commands[l:cmd_name]["complete_func"]
+			endif
+			let l:choices = call(l:func_choices, [a:arglead, a:cmd, a:curpos])
 		endif
 		if exists('s:git_commands[l:cmd_name]["options"]')
 			call extend(l:choices, keys(s:git_commands[l:cmd_name]["options"]))
