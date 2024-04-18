@@ -11,7 +11,7 @@ let s:git_commands = {
 			\ '-c': v:null,
 			\ '--merge': v:null,
 		\ },
-		\ 'complete_func': 'git#branch#custom_list',
+		\ 'complete_func': ['git#branch#custom_list', 'git#cmd#rev_custom_list'],
 	\ },
 	\ 'rebase': {
 		\ 'options': {
@@ -23,7 +23,7 @@ let s:git_commands = {
 		\ 'complete_func': 'git#branch#custom_list',
 	\ },
 	\ 'checkout': {
-		\ 'complete_func': 'git#branch#custom_list',
+		\ 'complete_func': 'git#cmd#rev_custom_list',
 	\ },
 	\ 'add': {
 		\ 'options': {
@@ -33,7 +33,8 @@ let s:git_commands = {
 	\ },
 	\ 'commit': {
 		\ 'options': {
-			\'-m': v:null,
+			\ '-m': v:null,
+			\ '--amend': v:null,
 		\ },
 	\ },
 	\ 'fetch': {
@@ -48,6 +49,23 @@ let s:git_commands = {
 	\ 'push': {
 		\ 'complete_func': ['git#remote#custom_list', 'git#branch#custom_list'],
 	\},
+	\ 'cherry-pick': {
+		\ 'options': {
+			\ '--continue': v:null,
+		\ },
+		\ 'complete_func': 'git#cmd#rev_custom_list',
+	\ },
+	\ 'stash': {
+		\ 'options': {
+			\ '-m': v:null,
+		\ },
+		\ 'commands': ['push', 'pop'],
+	\ },
+	\ 'restore': {
+		\ 'options': {
+			\ '--staged': v:null,
+		\ },
+	\ },
 \ }
 function s:cmd_exec(cmd, from) abort
 	if !exists('a:cmd[a:from]')
@@ -193,17 +211,22 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 			let l:choices = keys(s:git_commands[l:cmd_name])
 		elseif l:opt_name != '' && exists('s:git_commands[l:cmd_name]["options"][l:opt_name]') && type(s:git_commands[l:cmd_name]["options"][l:opt_name]) != type(v:null)
 			let l:choices = call(s:git_commands[l:cmd_name]["options"][l:opt_name], [a:arglead, a:cmd, a:curpos])
-		elseif exists('s:git_commands[l:cmd_name]["complete_func"]')
-			let l:func_choices = v:null
-			if type(s:git_commands[l:cmd_name]["complete_func"]) == type([])
-				if exists('s:git_commands[l:cmd_name]["complete_func"][l:arg_num]')
-					echom l:arg_num
-					let l:func_choices = s:git_commands[l:cmd_name]["complete_func"][l:arg_num]
+		else
+			if exists('s:git_commands[l:cmd_name]["complete_func"]')
+				let l:func_choices = v:null
+				if type(s:git_commands[l:cmd_name]["complete_func"]) == type([])
+					if exists('s:git_commands[l:cmd_name]["complete_func"][l:arg_num]')
+						echom l:arg_num
+						let l:func_choices = s:git_commands[l:cmd_name]["complete_func"][l:arg_num]
+					endif
+				else
+					let l:func_choices = s:git_commands[l:cmd_name]["complete_func"]
 				endif
-			else
-				let l:func_choices = s:git_commands[l:cmd_name]["complete_func"]
+				let l:choices = call(l:func_choices, [a:arglead, a:cmd, a:curpos])
 			endif
-			let l:choices = call(l:func_choices, [a:arglead, a:cmd, a:curpos])
+			if exists('s:git_commands[l:cmd_name]["commands"]')
+				call extend(l:choices, s:git_commands[l:cmd_name]["commands"])
+			endif
 		endif
 		if exists('s:git_commands[l:cmd_name]["options"]')
 			call extend(l:choices, keys(s:git_commands[l:cmd_name]["options"]))
@@ -215,14 +238,25 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 			call add(l:result, l:choice)
 		endif
 	endfor
-	return l:result
+	return uniq(l:result)
 endfunction
 function git#cmd#add_custom_list(arglead, cmd, curpos)
 	let l:result = []
-	for l:diffline in git#system#call_list('diff --raw')
-		let l:diff_infos = matchlist(l:diffline, '^[^	]\+	\(.\+\)')
-		if len(l:diff_infos) > 0
-			call add(l:result, l:diff_infos[1])
+	for l:addline in git#system#call_list('status -s --untracked=all')
+		echom l:addline
+		let l:add_infos = matchlist(l:addline, '^.. \(.\+\)')
+		echom l:add_infos
+		if len(l:add_infos) > 0
+			call add(l:result, l:add_infos[1])
+		endif
+	endfor
+	return l:result
+endfunction
+function git#cmd#rev_custom_list(arglead, cmd, curpos)
+	let l:result = git#branch#custom_list(a:arglead, a:cmd, a:curpos)
+	for l:revline in git#system#call_list('rev-list --all --abbrev-commit')
+		if l:revline =~ '^'.a:arglead
+			call add(l:result, l:revline)
 		endif
 	endfor
 	return l:result
