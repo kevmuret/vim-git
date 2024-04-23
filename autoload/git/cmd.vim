@@ -137,10 +137,14 @@ function s:cmd_exit(jobid, status)
 			quit
 			call s:cmd_exec(s:git_cmd_chain, l:continue_to + 1)
 		elseif a:status == 0
+			checktime
 			quit
 		endif
-	elseif a:status == 0
-		quit
+	else
+		checktime
+		if a:status == 0
+			quit
+		endif
 	endif
 endfunction
 
