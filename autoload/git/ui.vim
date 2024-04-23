@@ -202,6 +202,9 @@ function git#ui#end_loading(name) abort
 	endif
 endfunction
 
+function git#ui#unmap_dbl_click(timer)
+	unmap <2-LeftRelease>
+endfunction
 function git#ui#on_dbl_click(namespace) abort
 	let l:Fn = funcref('git#'.a:namespace.'#on_dbl_click')
 	let l:linenr = line('.')
@@ -212,9 +215,8 @@ function git#ui#on_dbl_click(namespace) abort
 	let l:syn_name = synIDattr(l:synstack[len(l:synstack) - 1], 'name')
 	if l:Fn(l:syn_name, getline(l:linenr)[col("'<") - 1:col("'>") - 1])
 	endif
-	unmap <2-LeftRelease>
 endfunction
 function git#ui#dbl_click(ftmatch, namespace) abort
-	execute 'autocmd CursorMoved '.a:ftmatch.' noremap <2-LeftRelease> :GitUIDBLClick '.a:namespace.'<CR><ESC>'
+	execute 'augroup GitUIMove | autocmd GitUIMove CursorMoved '.a:ftmatch.' noremap <2-LeftRelease> :GitUIDBLClick '.a:namespace.'<CR>:call timer_start(1000, funcref("git#ui#unmap_dbl_click"))<CR><ESC>'
 endfunction
 command! -range -nargs=1 GitUIDBLClick call git#ui#on_dbl_click(<f-args>)
