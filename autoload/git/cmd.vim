@@ -171,7 +171,7 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 	let l:opt_name = ''
 	let l:arg_num = -1
 	let l:pos = 0
-	let l:is_first = v:true
+	let l:is_first = v:true "Skip the first argument (Git command)
 	for l:arg in split(a:cmd, ' ')
 		if l:is_first
 			let l:is_first = v:false
@@ -189,9 +189,10 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 			let l:arg_num = -1
 		else
 			let l:is_in_args = v:true
-			let l:arg_num += 1
 			if l:arg =~ '^-'
 				let l:opt_name = l:arg
+			else
+				let l:arg_num += 1
 			endif
 		endif
 		let l:pos += len(l:arg) + 1
@@ -216,7 +217,6 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 				let l:func_choices = v:null
 				if type(s:git_commands[l:cmd_name]["complete_func"]) == type([])
 					if exists('s:git_commands[l:cmd_name]["complete_func"][l:arg_num]')
-						echom l:arg_num
 						let l:func_choices = s:git_commands[l:cmd_name]["complete_func"][l:arg_num]
 					endif
 				else
@@ -243,9 +243,7 @@ endfunction
 function git#cmd#add_custom_list(arglead, cmd, curpos)
 	let l:result = []
 	for l:addline in git#system#call_list('status -s --untracked=all')
-		echom l:addline
 		let l:add_infos = matchlist(l:addline, '^.. \(.\+\)')
-		echom l:add_infos
 		if len(l:add_infos) > 0
 			call add(l:result, l:add_infos[1])
 		endif
