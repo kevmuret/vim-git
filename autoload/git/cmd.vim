@@ -77,7 +77,7 @@ function s:cmd_exec(cmd, from) abort
 		return
 	endif
 	let l:eof_cmd = a:from
-	let l:cmd = ['git', a:cmd[a:from]]
+	let l:cmd = [g:git_cmd_path, a:cmd[a:from]]
 	for l:argid in range(a:from + 1, len(a:cmd) - 1)
 		if a:cmd[l:argid] == '&&' || a:cmd[l:argid] == '||'
 			break
