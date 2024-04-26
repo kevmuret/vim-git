@@ -13,11 +13,7 @@ function git#diff#buffer_versus(...) abort
 	execute 'file '.l:rev.'/'.l:file_path
 	filetype detect
 	let l:text = git#system#call_list('show '.l:rev.':'.l:file_path)
-	let l:nlines = len(l:text)
-	if l:nlines && l:text[l:nlines-1] == ''
-		let l:text = l:text[0:l:nlines-2]
-	endif
-	call append(0, l:text)
+	call git#ui#buf_puttext(l:text)
 	delete
 	setlocal noma
 	difft

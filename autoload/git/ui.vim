@@ -1,9 +1,14 @@
-function Bufputtext(text) abort
-	let l:text = split(a:text, "\n")
+function git#ui#buf_puttext(text) abort
+	let l:text = type(a:text) == type([]) ? a:text : split(a:text, "\n")
 	if get(l:text, 0) =~"\r$"
 		setlocal ff=dos
 		for l:lineid in range(len(l:text))
-			let l:text[l:lineid] = trim(l:text[l:lineid], "\r", 2)
+			let l:linelen = len(l:text[l:lineid])
+			if l:linelen > 1
+				let l:text[l:lineid] = l:text[l:lineid][0:l:linelen - 2]
+			else
+				let l:text[l:lineid] = ''
+			endif
 		endfor
 	else
 		setlocal ff=unix
@@ -30,7 +35,7 @@ function git#ui#win_apply_options(options) abort
 		if exists("a:options['text']")
 			setlocal ma
 			%delete _
-			call Bufputtext(a:options['text'])
+			call git#ui#buf_puttext(a:options['text'])
 			delete
 			normal gg
 			setlocal buftype=nofile
