@@ -7,7 +7,6 @@ let s:git_cmd_bufnr = 0
 let s:git_commands = {
 	\ 'switch': {
 		\ 'options': {
-			\ '-C': v:null,
 			\ '-c': v:null,
 			\ '--merge': v:null,
 		\ },
@@ -44,9 +43,15 @@ let s:git_commands = {
 		\ 'complete_func': ['git#remote#custom_list', 'git#branch#custom_list'],
 	\},
 	\ 'pull': {
+		\ 'options': {
+			\ '--rebase': v:null,
+		\ },
 		\ 'complete_func': ['git#remote#custom_list', 'git#branch#custom_list'],
 	\},
 	\ 'push': {
+		\ 'options': {
+			\ '--force': v:null,
+		\ },
 		\ 'complete_func': ['git#remote#custom_list', 'git#branch#custom_list'],
 	\},
 	\ 'cherry-pick': {
@@ -65,6 +70,15 @@ let s:git_commands = {
 		\ 'options': {
 			\ '--staged': v:null,
 		\ },
+		\ 'complete_func': 'git#cmd#restore_custom_list',
+	\ },
+	\ 'branch': {
+		\ 'options': {
+			\ '-d': v:null,
+			\ '-c': v:null,
+			\ '-m': v:null,
+		\ },
+		\ 'complete_func': 'git#branch#custom_list',
 	\ },
 \ }
 function s:cmd_exec(cmd, from) abort
