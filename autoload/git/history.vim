@@ -18,12 +18,16 @@ function git#history#graph(...) abort
 	let l:history = git#system#call_list("log --graph --pretty='%d %h <%an>	%ad	%s' --date='format:%Y-%m-%d %H:%M:%S' ".l:history_args)
 	let l:history_list = []
 	for l:history_line in l:history
-		let l:match = matchstr(l:history_line, '^[|\\/ *]\+(')
+		let l:match = matchstr(l:history_line, '^[|\\/.\- *]\+(')
 		if l:match != ''
 			let l:match2 = matchstr(l:history_line[len(l:match):], '^[^)]\+)')
-			call add(l:history_list, substitute(l:match, '*', '|', 'g').l:match2)
+			call add(l:history_list, substitute(substitute(l:match, '*', '|', 'g'), '[^|(]', ' ', 'g').l:match2)
 			call add(l:history_list, l:match[0:-2].l:history_line[len(l:match)+len(l:match2):])
 		else
+			let l:match = matchstr(l:history_line, '^[|\\/.\- *]\+$')
+			if l:match != ''
+				let l:history_line .= '  '
+			endif
 			call add(l:history_list, l:history_line)
 		endif
 	endfor
