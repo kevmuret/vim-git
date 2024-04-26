@@ -1,9 +1,15 @@
 function git#branch#custom_list(arglead, cmdline, curpos) abort
 	let l:result = []
-	let l:branches = git#system#call_list('branch')
+	let l:branches = git#system#call_list('branch -l'.(a:arglead != '' ? ' '.a:arglead.'*' :  ''))
 	for l:branch in l:branches
-		if l:branch[2:] =~ '^'.a:arglead
-			call add(l:result, l:branch[2:])
+		if l:branch[2:] !~ ' -> ' && l:branch[2:] !~ '^(HEAD\>'
+			call git#cmd#custom_list_add_result(l:result, a:arglead, l:branch[2:], '/')
+		endif
+	endfor
+	let l:branches = git#system#call_list('branch -l -r'.(a:arglead != '' ? ' '.a:arglead.'*' :  ''))
+	for l:branch in l:branches
+		if l:branch[2:] !~ '->' && l:branch[2:] !~ '^(HEAD\>'
+			call git#cmd#custom_list_add_result(l:result, a:arglead, l:branch[2:], '/')
 		endif
 	endfor
 	return l:result

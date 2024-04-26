@@ -229,7 +229,7 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 		if a:arglead =~ '^-'
 			let l:choices = keys(s:git_commands[l:cmd_name])
 		elseif l:opt_name != '' && exists('s:git_commands[l:cmd_name]["options"][l:opt_name]') && type(s:git_commands[l:cmd_name]["options"][l:opt_name]) != type(v:null)
-			let l:choices = call(s:git_commands[l:cmd_name]["options"][l:opt_name], [a:arglead, a:cmd, a:curpos])
+			let l:result = call(s:git_commands[l:cmd_name]["options"][l:opt_name], [a:arglead, a:cmd, a:curpos])
 		else
 			if exists('s:git_commands[l:cmd_name]["complete_func"]')
 				let l:func_choices = v:null
@@ -240,7 +240,7 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 				else
 					let l:func_choices = s:git_commands[l:cmd_name]["complete_func"]
 				endif
-				let l:choices = call(l:func_choices, [a:arglead, a:cmd, a:curpos])
+				let l:result = call(l:func_choices, [a:arglead, a:cmd, a:curpos])
 			endif
 			if exists('s:git_commands[l:cmd_name]["commands"]')
 				call extend(l:choices, s:git_commands[l:cmd_name]["commands"])
@@ -253,17 +253,27 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 	endif
 	for l:choice in l:choices
 		if l:choice =~ '^'.a:arglead
-			call add(l:result, l:choice)
+			call git#cmd#custom_list_add_result(l:result, a:arglead, l:choice)
 		endif
 	endfor
-	return uniq(l:result)
+	return l:result
 endfunction
 function git#cmd#add_custom_list(arglead, cmd, curpos)
 	let l:result = []
 	for l:addline in git#system#call_list('status -s --untracked=all')
-		let l:add_infos = matchlist(l:addline, '^.. \(.\+\)')
+		let l:add_infos = matchlist(l:addline, '^.[MU] \(.\+\)')
 		if len(l:add_infos) > 0
-			call add(l:result, l:add_infos[1])
+			call git#cmd#custom_list_add_result(l:result, a:arglead, l:add_infos[1], '/')
+		endif
+	endfor
+	return l:result
+endfunction
+function git#cmd#restore_custom_list(arglead, cmd, curpos)
+	let l:result = []
+	for l:addline in git#system#call_list('status -s')
+		let l:add_infos = matchlist(l:addline, '^M. \(.\+\)')
+		if len(l:add_infos) > 0
+			call git#cmd#custom_list_add_result(l:result, a:arglead, l:add_infos[1], '/')
 		endif
 	endfor
 	return l:result
@@ -272,8 +282,22 @@ function git#cmd#rev_custom_list(arglead, cmd, curpos)
 	let l:result = git#branch#custom_list(a:arglead, a:cmd, a:curpos)
 	for l:revline in git#system#call_list('rev-list --all --abbrev-commit')
 		if l:revline =~ '^'.a:arglead
-			call add(l:result, l:revline)
+			call git#cmd#custom_list_add_result(l:result, a:arglead, l:revline)
 		endif
 	endfor
 	return l:result
+endfunction
+function git#cmd#custom_list_add_result(result, arglead, match, sep='')
+	let l:match = a:match
+	if a:sep != ''
+		let l:match_sep = matchstr(a:match, '^'.a:arglead.'[^'.a:sep.']*'.a:sep.'\?')
+		if l:match_sep != ''
+			let l:match = l:match_sep
+		else
+			return
+		endif
+	endif
+	if index(a:result, l:match) == -1
+		call add(a:result, l:match)
+	endif
 endfunction
