@@ -18,12 +18,16 @@ function git#history#graph(...) abort
 	let l:history = git#system#call_list("log --graph --pretty='%d %h <%an>	%ad	%s' --date='format:%Y-%m-%d %H:%M:%S' ".l:history_args)
 	let l:history_list = []
 	for l:history_line in l:history
-		let l:match = matchstr(l:history_line, '^[|\\/ *]\+(')
+		let l:match = matchstr(l:history_line, '^[|\\/.\- *]\+(')
 		if l:match != ''
 			let l:match2 = matchstr(l:history_line[len(l:match):], '^[^)]\+)')
-			call add(l:history_list, substitute(l:match, '*', '|', 'g').l:match2)
+			call add(l:history_list, substitute(substitute(l:match, '[*\\/]', '|', 'g'), '[^|(]', ' ', 'g').l:match2)
 			call add(l:history_list, l:match[0:-2].l:history_line[len(l:match)+len(l:match2):])
 		else
+			let l:match = matchstr(l:history_line, '^[|\\/.\- *]\+$')
+			if l:match != ''
+				let l:history_line .= '  '
+			endif
 			call add(l:history_list, l:history_line)
 		endif
 	endfor
@@ -41,144 +45,190 @@ function git#history#graph(...) abort
 	normal gg
 	call git#ui#end_loading(l:history_bufname)
 endfunction
-let s:last_chr = ''
-function s:FollowGraphHorizontalBar(linenr, colnr, line, dir) abort
-	let l:syn_colnr = a:colnr
-	let l:syn_cmd = 'syn region gitGraphHL start="\%'.a:linenr.'l\%'.l:syn_colnr.'c" end="\%'.a:linenr.'l\%'.(l:syn_colnr + 1).'c"'
-	execute l:syn_cmd
-	let l:syn_colnr += a:dir * 2
-	if a:dir < 0
-		while l:syn_colnr - 1 < len(a:line)
-			if a:line[l:syn_colnr - 1] != '_'
-				break
-			endif
-			let l:syn_cmd = 'syn region gitGraphHL start="\%'.a:linenr.'l\%'.l:syn_colnr.'c" end="\%'.a:linenr.'l\%'.(l:syn_colnr + 1).'c"'
-			execute l:syn_cmd
-			let l:syn_colnr += a:dir * 2
-		endwhile
-		let l:syn_colnr -= a:dir * 2
-	else
-		while l:syn_colnr > 0
-			if a:line[l:syn_colnr - 1] != '_'
-				break
-			endif
-			let l:syn_cmd = 'syn region gitGraphHL start="\%'.a:linenr.'l\%'.l:syn_colnr.'c" end="\%'.a:linenr.'l\%'.(l:syn_colnr + 1).'c"'
-			execute l:syn_cmd
-			let l:syn_colnr += a:dir * 2
-		endwhile
-	endif
-	return l:syn_colnr
-endfunction
-function s:FollowGraph(linenr, colnr, dir) abort
-	let l:syn_line = getline(a:linenr)
-	let l:syn_char = l:syn_line[a:colnr - 1]
-	let l:syn_len = 1
-	let l:syn_colnr = a:colnr
-	if l:syn_char == ' '
-		if l:syn_colnr > 1
-			if s:last_chr == '/'
-				if l:syn_line[l:syn_colnr - 1 + a:dir] == '_'
-					"TODO
-				endif
-			elseif s:last_chr == '\'
-				if l:syn_line[l:syn_colnr - 1 - a:dir] == '_'
-					"TODO
-				endif
-			endif
-			if l:syn_line[l:syn_colnr - 1 - a:dir] == '\'
-				let l:syn_colnr = l:syn_colnr - a:dir
-			elseif l:syn_line[l:syn_colnr - 1 + a:dir] == '/'
-				let l:syn_colnr += a:dir
-			else
-				let s:last_chr = '\'
-				return -1
-			endif
-		else
-			let s:last_chr = '\'
-			return l:syn_colnr
-		endif
-	elseif l:syn_char == '|'
-		if s:last_chr == '/'
-			if l:syn_line[l:syn_colnr - 1 + a:dir] == '_'
-				"TODO
-				let l:syn_colnr += a:dir
-				let l:syn_colnr = s:FollowGraphHorizontalBar(a:linenr, l:syn_colnr, l:syn_line, a:dir)
-			elseif l:syn_line[l:syn_colnr - 1 + a:dir] == '/'
-				let l:syn_colnr += a:dir
-			endif
-		elseif s:last_chr == '\'
-			if l:syn_line[l:syn_colnr - 1 - a:dir] == '_'
-				"TODO
-			elseif l:syn_line[l:syn_colnr - 1 - a:dir] == '\'
-				let l:syn_colnr -= a:dir
-			endif
-		endif
-	elseif l:syn_char == '_'
-		"TODO
-		let l:syn_colnr = s:FollowGraphHorizontalBar(a:linenr, l:syn_colnr, l:syn_line, a:dir)
-	elseif l:syn_char == '\'
-		if l:syn_line[l:syn_colnr - 1 - a:dir] == '_'
-			"TODO
-		endif
-	elseif l:syn_char == '/'
-		if l:syn_line[l:syn_colnr - 1 + (a:dir * 2)] == '_'
-			"TODO
-			let l:syn_colnr = s:FollowGraphHorizontalBar(a:linenr, l:syn_colnr, l:syn_line, a:dir)
-		endif
-	elseif l:syn_char == '*'
-		for l:chrnr in range(l:syn_colnr, len(l:syn_line) - 1)
-			if l:syn_line[l:chrnr] == '<'
-				let l:syn_len -= 1
-				break
-			endif
-			let l:syn_len += 1
-		endfor
-	endif
-	let l:syn_cmd = 'syn region gitGraphHL start="\%'.a:linenr.'l\%'.l:syn_colnr.'c" end="\%'.a:linenr.'l\%'.(l:syn_colnr + l:syn_len).'c"'
-	"echom l:syn_cmd
-	let l:syn_char = l:syn_line[l:syn_colnr - 1]
-	let s:last_chr = l:syn_char
-	if l:syn_char == '\'
-		let l:syn_colnr -= a:dir
-	elseif l:syn_char == '/'
-		let l:syn_colnr += a:dir
-	elseif l:syn_char == '_'
-		let l:syn_colnr += a:dir * 2
-	endif
-	execute l:syn_cmd
-	return l:syn_colnr
-endfunction
-if !exists('g:git_history_max_follow_graph')
-	let g:git_history_max_follow_graph = 100
-endif
 
+if !exists('g:git_history_max_follow_graph')
+	let g:git_history_max_follow_graph = 10000
+endif
 function git#history#on_dbl_click(synname, wordsel, colnr) abort
 	if a:synname == 'gitGraphHash'
 		let l:hash = expand('<cword>')
 		call git#commit#show(l:hash)
 	elseif getline('.')[a:colnr-1] != ' ' && a:synname == 'gitGraph' || a:synname == 'gitGraphHL'
 		syn clear
-		let l:linenr = line('.')
-		let l:syn_colnr = a:colnr
-		let s:last_chr = '|'
-		let l:syn_dir = 1
-		for l:syn_linenr in reverse(range(max([1, l:linenr - g:git_history_max_follow_graph]), l:linenr))
-			let l:syn_colnr = s:FollowGraph(l:syn_linenr, l:syn_colnr, l:syn_dir)
-			if l:syn_colnr < 0
+		let s:post_execute = []
+		let l:curlinenr = line('.')
+		let l:curline = getline(l:curlinenr)
+		let l:curcolnr = a:colnr
+		let l:curlinepos = s:GraphFollowCurLine(l:curline, l:curlinenr, l:curcolnr - 1)
+		let l:lastline = l:curline
+		let l:rpos = copy(l:curlinepos)
+		for l:uplinenr in reverse(range(max([1, l:curlinenr - g:git_history_max_follow_graph]), l:curlinenr - 1))
+			let l:upline = getline(l:uplinenr)
+			let l:pos = s:GraphFollowUpPos(l:rpos, l:lastline, l:upline)
+			let l:rpos = s:GraphFollowCurLine(l:upline, l:uplinenr, l:pos)
+			if type(l:rpos) == type(v:null)
 				break
 			endif
+			let l:lastline = l:upline
 		endfor
-		let s:last_chr = '|'
-		let l:syn_colnr = col('.')
-		let l:syn_dir = -1
-		for l:syn_linenr in range(l:linenr, min([line('$'), l:linenr + g:git_history_max_follow_graph]))
-			let l:syn_colnr = s:FollowGraph(l:syn_linenr, l:syn_colnr, l:syn_dir)
-			if l:syn_colnr < 0
+		let l:lastline = l:curline
+		let l:rpos = copy(l:curlinepos)
+		for l:downlinenr in range(l:curlinenr + 1, min([line('$'), l:curlinenr + g:git_history_max_follow_graph]))
+			let l:downline = getline(l:downlinenr)
+			let l:pos = s:GraphFollowDownPos(l:rpos, l:lastline, l:downline)
+			let l:rpos = s:GraphFollowCurLine(l:downline, l:downlinenr, l:pos)
+			if type(l:rpos) == type(v:null)
 				break
 			endif
+			let l:lastline = l:downline
 		endfor
+
 		runtime syntax/git_graph.vim
+		
+		for l:execute in s:post_execute
+			execute l:execute
+		endfor
 	endif
 endfunction
 call git#ui#dbl_click('Git\ graph:*', 'history')
-	
+
+
+function s:GraphHL(linenr, colnr, ncols)
+	let l:colnr = a:colnr + 1
+	execute 'syn region gitGraphHL start="\%'.a:linenr.'l\%'.l:colnr.'c" end="\%'.a:linenr.'l\%'.(l:colnr + a:ncols).'c"'
+endfunction
+let s:post_execute = []
+function s:GraphHLCommit(linenr)
+	call add(s:post_execute, 'syn region CursorLine start="\%'.a:linenr.'l\%1c" end="$" contains=gitGraph,gitGraphHash,gitGraphDate')
+endfunction
+function s:GraphFollowUpPos(rpos, curline, upline)
+	let l:pos = a:rpos[0]
+	let l:curchr = a:curline[l:pos]
+	let l:uplinelen = len(a:upline)
+	if a:upline[l:pos] == '|' || a:upline[l:pos] == '*'
+	elseif a:curline[a:rpos[1]] == '/'
+		if a:upline[a:rpos[1]] == '\'
+			let l:pos = a:rpos[1]
+		else
+			let l:pos = a:rpos[1] + 1
+			if l:pos + 1 < l:uplinelen
+				if a:upline[l:pos + 1] == '/' || a:upline[l:pos + 1] == '_'
+					let l:pos += 1
+				endif
+			endif
+		endif
+	elseif l:curchr == '\'
+		let l:pos -= 1
+		if l:pos > 0 && a:upline[l:pos - 1] == '\'
+			let l:pos -= 1
+		endif
+	elseif l:pos > 0 && a:upline[l:pos - 1] == '\'
+		let l:pos -= 1
+	elseif a:rpos[1] + 1 < l:uplinelen && a:upline[a:rpos[1] + 1] == '/'
+		let l:pos = a:rpos[1] + 1
+	endif
+	return l:pos
+endfunction
+function s:GraphFollowDownPos(rpos, curline, downline)
+	let l:pos = a:rpos[0]
+	let l:curchr = a:curline[l:pos]
+	let l:downlinelen = len(a:downline)
+	if a:downline[l:pos] == '|' || a:downline[l:pos] == '*'
+	elseif l:curchr == '_'
+		let l:pos -= 2
+	elseif l:curchr == '/'
+		let l:pos -= 1
+		if l:pos > 1 && a:downline[l:pos - 2] == '/'
+			let l:pos -= 1
+		endif
+	elseif l:curchr == '\'
+		if a:downline[l:pos] == '/'
+			let l:pos = a:rpos[1]
+		else
+			let l:pos = a:rpos[1] + 1
+		endif
+	elseif l:pos > 0 && a:downline[l:pos - 1] == '/'
+		let l:pos -= 1
+	elseif a:rpos[1] + 1 < l:downlinelen && a:downline[a:rpos[1] + 1] == '\'
+		let l:pos = a:rpos[1] + 1
+	endif
+	return l:pos
+endfunction
+function s:GraphFollowCurLine(curline, curlinenr, pos) abort
+	let l:curchr = a:curline[a:pos]
+	let l:npos = v:null
+	let l:rpos = v:null
+	if l:curchr == ' '
+	elseif l:curchr == '|' || l:curchr == '*' || l:curchr == '\'
+		let l:npos = [a:pos, 1]
+	elseif l:curchr == '/'
+		let l:npos = [a:pos, 1]
+		let l:rpos = [a:pos, a:pos]
+		if a:pos > 1 && a:curline[a:pos - 2] == '_'
+			while l:npos[0] > 1
+				if a:curline[l:npos[0] - 2] != '_'
+					break
+				endif
+				call s:GraphHL(a:curlinenr, l:npos[0], l:npos[1])
+				let l:npos[0] -= 2
+			endwhile
+		endif
+		let l:rpos[0] = l:npos[0]
+	elseif l:curchr == '.'
+		let l:npos = [a:pos, 1]
+		while l:npos[0] > 0
+			let l:npos[0] -= 1
+			let l:npos[1] += 1
+			if a:curline[l:npos[0]] != '-'
+				break
+			endif
+		endwhile
+	elseif l:curchr == '-'
+		let l:npos = [a:pos, 1]
+		while l:npos[0] > 0
+			let l:npos[0] -= 1
+			let l:npos[1] += 1
+			if a:curline[l:npos[0]] != '-'
+				break
+			endif
+		endwhile
+		let l:curlinelen = len(a:curline)
+		let l:seekpos = a:pos + 1
+		while l:seekpos < l:curlinelen
+			let l:npos[1] += 1
+			if a:curline[l:seekpos] == '.'
+				break
+			endif
+			let l:seekpos += 1
+		endwhile
+	elseif l:curchr == '_'
+		let l:npos = [a:pos, 1]
+		while l:npos[0] > 1
+			if a:curline[l:npos[0] - 2] != '_'
+				break
+			endif
+			call s:GraphHL(a:curlinenr, l:npos[0], l:npos[1])
+			let l:npos[0] -= 2
+		endwhile
+		let l:rpos = [l:npos[0], a:pos]
+		let l:curlinelen = len(a:curline)
+		while l:npos[0] < l:curlinelen
+			call s:GraphHL(a:curlinenr, l:npos[0], l:npos[1])
+			if a:curline[l:npos[0]] == '/'
+				break
+			endif
+			let l:npos[0] += 2
+		endwhile
+		let l:rpos[1] = l:npos[0]
+	endif
+	if type(l:npos) != type(v:null)
+		call s:GraphHL(a:curlinenr, l:npos[0], l:npos[1])
+		if l:curchr == '*'
+			call s:GraphHLCommit(a:curlinenr)
+		endif
+	endif
+	if type(l:rpos) == type(v:null) && type(l:npos) != type(v:null)
+		let l:rpos = [l:npos[0], l:npos[0] + l:npos[1] - 1]
+	endif
+	return copy(l:rpos)
+endfunction
