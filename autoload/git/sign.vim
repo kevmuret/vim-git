@@ -40,7 +40,7 @@ function s:parse_diff_changes(ch, msg)
 			\ }
 		endif
 	else
-		if l:diff_job['sign_linenum'] == l:diff_job['del_linenum']
+		if l:diff_job['sign_linenum'] == l:diff_job['del_linenum'] && l:diff_job['del_nlines']
 			let l:new_sign = {
 				\ 'name': 'gitDelSign',
 				\ 'lnum': l:diff_job['sign_linenum'] == 0 ? 1 : l:diff_job['sign_linenum'],
@@ -96,7 +96,12 @@ function git#sign#place_file(filepath)
 	let s:diff_jobs_byid[l:jobrealid] = s:diff_jobs[l:chrealid]
 endfunction
 function s:exit_diff(jobid, status)
-	unlet s:diff_jobs[s:diff_jobs_byid[matchstr(a:jobid, '\(\d\+\)')]['chid']]
-	unlet s:diff_jobs_byid[matchstr(a:jobid, '\(\d\+\)')]
+	let l:jobid = matchstr(a:jobid, '\(\d\+\)')
+	let l:diff_job = s:diff_jobs_byid[l:jobid]
+	if l:diff_job['del_linenum']
+		call sign_place(l:diff_job['sign_id'] + 1, 'GitDiffSigns', 'gitDelSign', l:diff_job['sign_bufnr'], {'lnum': l:diff_job['del_linenum']})
+	endif
+	unlet s:diff_jobs[l:diff_job['chid']]
+	unlet s:diff_jobs_byid[l:jobid]
 endfunction
 
