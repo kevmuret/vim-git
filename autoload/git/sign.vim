@@ -45,9 +45,9 @@ function s:parse_diff_changes(ch, msg)
 				\ 'name': 'gitDelSign',
 				\ 'lnum': l:diff_job['sign_linenum'] == 0 ? 1 : l:diff_job['sign_linenum'],
 			\ }
-			let l:diff_job['del_linenum'] = 0
-			let l:diff_job['del_nlines'] = 0
 		endif
+		let l:diff_job['del_linenum'] = 0
+		let l:diff_job['del_nlines'] = 0
 		let l:diff_job['sign_linenum'] += 1
 	endif
 	if !l:diff_job['del_nlines']
