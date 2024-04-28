@@ -207,8 +207,14 @@ function git#ui#end_loading(name) abort
 	endif
 endfunction
 
-function git#ui#unmap_dbl_click(timer)
+function git#ui#unmap_dbl_click(timer=0)
+	if s:unmap_dbl_click_timer && a:timer != s:unmap_dbl_click_timer
+		call timer_stop(s:unmap_dbl_click_timer)
+	elseif !a:timer && !s:unmap_dbl_click_timer
+		return
+	endif
 	unmap <2-LeftRelease>
+	let s:unmap_dbl_click_timer = 0
 	let s:dbl_click_colnr = -1
 endfunction
 function git#ui#on_dbl_click(namespace) abort
@@ -236,5 +242,6 @@ function git#ui#wait_dbl_click(namespace) abort
 endfunction
 function git#ui#dbl_click(ftmatch, namespace) abort
 	execute "autocmd CursorMoved ".a:ftmatch." call git#ui#wait_dbl_click('".a:namespace."')"
+	execute "autocmd BufLeave ".a:ftmatch." call git#ui#unmap_dbl_click()"
 endfunction
 command! -range -nargs=1 GitUIDBLClick call git#ui#on_dbl_click(<f-args>)
