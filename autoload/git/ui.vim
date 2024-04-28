@@ -209,6 +209,7 @@ endfunction
 
 function git#ui#unmap_dbl_click(timer)
 	unmap <2-LeftRelease>
+	let s:dbl_click_colnr = -1
 endfunction
 function git#ui#on_dbl_click(namespace) abort
 	let l:Fn = funcref('git#'.a:namespace.'#on_dbl_click')
@@ -218,16 +219,20 @@ function git#ui#on_dbl_click(namespace) abort
 		return
 	endif
 	let l:syn_name = synIDattr(l:synstack[len(l:synstack) - 1], 'name')
-	if l:Fn(l:syn_name, getline(l:linenr)[col("'<") - 1:col("'>") - 1])
+	if l:Fn(l:syn_name, getline(l:linenr)[col("'<") - 1:col("'>") - 1], s:dbl_click_colnr)
 	endif
 endfunction
 let s:unmap_dbl_click_timer = 0
+let s:dbl_click_colnr = -1
 function git#ui#wait_dbl_click(namespace) abort
 	if s:unmap_dbl_click_timer
 		call timer_stop(s:unmap_dbl_click_timer)
 	endif
 	execute 'noremap <2-LeftRelease> :GitUIDBLClick '.a:namespace.'<CR>'
 	let s:unmap_dbl_click_timer = timer_start(1000, funcref('git#ui#unmap_dbl_click'))
+	if s:dbl_click_colnr < 0
+		let s:dbl_click_colnr = col('.')
+	endif
 endfunction
 function git#ui#dbl_click(ftmatch, namespace) abort
 	execute "autocmd CursorMoved ".a:ftmatch." call git#ui#wait_dbl_click('".a:namespace."')"

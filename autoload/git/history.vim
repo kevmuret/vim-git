@@ -152,16 +152,14 @@ if !exists('g:git_history_max_follow_graph')
 	let g:git_history_max_follow_graph = 100
 endif
 
-function git#history#on_dbl_click(synname, wordsel) abort
+function git#history#on_dbl_click(synname, wordsel, colnr) abort
 	if a:synname == 'gitGraphHash'
 		let l:hash = expand('<cword>')
-		"call setpos('.', [0, line('.'), 1])
 		call git#commit#show(l:hash)
-	elseif getline('.')[col('.')-1] != ' ' && a:synname == 'gitGraph' || a:synname == 'gitGraphHL'
+	elseif getline('.')[a:colnr-1] != ' ' && a:synname == 'gitGraph' || a:synname == 'gitGraphHL'
 		syn clear
 		let l:linenr = line('.')
-		let l:colnr = col('.')
-		let l:syn_colnr = l:colnr
+		let l:syn_colnr = a:colnr
 		let s:last_chr = '|'
 		let l:syn_dir = 1
 		for l:syn_linenr in reverse(range(max([1, l:linenr - g:git_history_max_follow_graph]), l:linenr))

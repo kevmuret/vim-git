@@ -240,7 +240,7 @@ function git#commit#popup_menu(cmd_options, action) abort
 	endif
 endfunction
 
-function git#commit#on_dbl_click(synname, wordsel) abort
+function git#commit#on_dbl_click(synname, wordsel, colnr) abort
 	let l:linenr = line('.')
 	if a:synname == 'gitCommitHashes' || a:synname == 'gitCommit3Hashes'
 		call git#commit#show_diff(l:linenr)
