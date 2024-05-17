@@ -5,7 +5,7 @@ function git#history#file(file_path) abort
 	call git#commit#popup_menu('--follow -- '.a:file_path, 'show')
 endfunction
 function git#history#graph_file(file_path) abort
-	call git#history#graph(['--follow', '--',  a:file_path])
+	call git#history#graph(['--follow',  a:file_path])
 endfunction
 function git#history#graph(...) abort
 	if a:0 == 0
