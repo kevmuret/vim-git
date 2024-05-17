@@ -107,7 +107,7 @@ function s:GraphFollowDownPos(rpos, curline, downline)
 		let l:pos -= 2
 	elseif l:curchr == '/'
 		let l:pos -= 1
-		if l:pos > 1 && a:downline[l:pos - 2] == '/'
+		if l:pos > 1 && a:downline[l:pos - 1] == '/'
 			let l:pos -= 1
 		endif
 	elseif l:curchr == '\'
