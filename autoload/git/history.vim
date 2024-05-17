@@ -43,61 +43,37 @@ function git#history#graph(...) abort
 	setlocal noma
 	setlocal syn=git_graph
 	normal gg
+	call git#ui#start('Git\ graph:*', 'history')
 	call git#ui#end_loading(l:history_bufname)
 endfunction
 
 if !exists('g:git_history_max_follow_graph')
 	let g:git_history_max_follow_graph = 10000
 endif
-function git#history#on_dbl_click(synname, wordsel, colnr) abort
-	if a:synname == 'gitGraphHash'
-		let l:hash = expand('<cword>')
-		call git#commit#show(l:hash)
-	elseif getline('.')[a:colnr-1] != ' ' && a:synname == 'gitGraph' || a:synname == 'gitGraphHL'
-		syn clear
-		let s:post_execute = []
-		let l:curlinenr = line('.')
-		let l:curline = getline(l:curlinenr)
-		let l:curcolnr = a:colnr
-		let l:curlinepos = s:GraphFollowCurLine(l:curline, l:curlinenr, l:curcolnr - 1)
-		let l:lastline = l:curline
-		let l:rpos = copy(l:curlinepos)
-		for l:uplinenr in reverse(range(max([1, l:curlinenr - g:git_history_max_follow_graph]), l:curlinenr - 1))
-			let l:upline = getline(l:uplinenr)
-			let l:pos = s:GraphFollowUpPos(l:rpos, l:lastline, l:upline)
-			let l:rpos = s:GraphFollowCurLine(l:upline, l:uplinenr, l:pos)
-			if type(l:rpos) == type(v:null)
-				break
-			endif
-			let l:lastline = l:upline
-		endfor
-		let l:lastline = l:curline
-		let l:rpos = copy(l:curlinepos)
-		for l:downlinenr in range(l:curlinenr + 1, min([line('$'), l:curlinenr + g:git_history_max_follow_graph]))
-			let l:downline = getline(l:downlinenr)
-			let l:pos = s:GraphFollowDownPos(l:rpos, l:lastline, l:downline)
-			let l:rpos = s:GraphFollowCurLine(l:downline, l:downlinenr, l:pos)
-			if type(l:rpos) == type(v:null)
-				break
-			endif
-			let l:lastline = l:downline
-		endfor
-
-		runtime syntax/git_graph.vim
-		
-		for l:execute in s:post_execute
-			execute l:execute
-		endfor
+function git#history#on_dblclick(event) abort
+	if a:event["synname"] == 'gitGraphHash'
+		call git#commit#show(a:event["textsel"])
+	elseif getline('.')[a:event["col"]-1] != ' ' && a:event["synname"] == 'gitGraph' || a:event["synname"] == 'gitGraphHL'
+		call s:FollowGraphFrom(a:event["lnum"], a:event["col"])
 	endif
 endfunction
-call git#ui#dbl_click('Git\ graph:*', 'history')
+call git#ui#event#on('history', 'dblclick', funcref('git#history#on_dblclick'))
+function git#history#on_enter(event) abort
+	echom a:event
+	if a:event["synname"] == 'gitGraphHash'
+		call git#commit#show(expand('<cword>'))
+	elseif getline('.')[a:event["col"]-1] != ' ' && a:event["synname"] == 'gitGraph' || a:event["synname"] == 'gitGraphHL'
+		call s:FollowGraphFrom(a:event["lnum"], a:event["col"])
+	endif
+endfunction
+call git#ui#event#on('history', 'enter', funcref('git#history#on_enter'))
 
 
+let s:post_execute = []
 function s:GraphHL(linenr, colnr, ncols)
 	let l:colnr = a:colnr + 1
 	execute 'syn region gitGraphHL start="\%'.a:linenr.'l\%'.l:colnr.'c" end="\%'.a:linenr.'l\%'.(l:colnr + a:ncols).'c"'
 endfunction
-let s:post_execute = []
 function s:GraphHLCommit(linenr)
 	call add(s:post_execute, 'syn region CursorLine start="\%'.a:linenr.'l\%1c" end="$" contains=gitGraph,gitGraphHash,gitGraphDate')
 endfunction
@@ -231,4 +207,36 @@ function s:GraphFollowCurLine(curline, curlinenr, pos) abort
 		let l:rpos = [l:npos[0], l:npos[0] + l:npos[1] - 1]
 	endif
 	return copy(l:rpos)
+endfunction
+function s:FollowGraphFrom(lnum, col) abort
+	syn clear
+	let s:post_execute = []
+	let l:curline = getline(a:lnum)
+	let l:curlinepos = s:GraphFollowCurLine(l:curline, a:lnum, a:col - 1)
+	let l:lastline = l:curline
+	let l:rpos = copy(l:curlinepos)
+	for l:uplinenr in reverse(range(max([1, a:lnum - g:git_history_max_follow_graph]), a:lnum - 1))
+		let l:upline = getline(l:uplinenr)
+		let l:pos = s:GraphFollowUpPos(l:rpos, l:lastline, l:upline)
+		let l:rpos = s:GraphFollowCurLine(l:upline, l:uplinenr, l:pos)
+		if type(l:rpos) == type(v:null)
+			break
+		endif
+		let l:lastline = l:upline
+	endfor
+	let l:lastline = l:curline
+	let l:rpos = copy(l:curlinepos)
+	for l:downlinenr in range(a:lnum + 1, min([line('$'), a:lnum + g:git_history_max_follow_graph]))
+		let l:downline = getline(l:downlinenr)
+		let l:pos = s:GraphFollowDownPos(l:rpos, l:lastline, l:downline)
+		let l:rpos = s:GraphFollowCurLine(l:downline, l:downlinenr, l:pos)
+		if type(l:rpos) == type(v:null)
+			break
+		endif
+		let l:lastline = l:downline
+	endfor
+	runtime syntax/git_graph.vim
+	for l:execute in s:post_execute
+		execute l:execute
+	endfor
 endfunction

@@ -208,6 +208,7 @@ function git#commit#show(hash) abort
 		setlocal syn=git_commit
 		call git#ui#end_loading(l:commit_bufname)
 	endif
+	call git#ui#start('Commit:*', 'commit')
 endfunction
 let s:popup_commits = []
 function git#commit#popup_action_show(popup_id, commit_id) abort
@@ -240,13 +241,22 @@ function git#commit#popup_menu(cmd_options, action) abort
 	endif
 endfunction
 
-function git#commit#on_dbl_click(synname, wordsel, colnr) abort
+function git#commit#on_dblclick(event) abort
 	let l:linenr = line('.')
-	if a:synname == 'gitCommitHashes' || a:synname == 'gitCommit3Hashes'
-		call git#commit#show_diff(l:linenr)
-	elseif a:synname == 'gitCommitHash'
-		call git#commit#show(a:wordsel)
+	if a:event["synname"] == 'gitCommitHashes' || a:event["synname"] == 'gitCommit3Hashes'
+		call git#commit#show_diff(a:event["lnum"])
+	elseif a:event["synname"] == 'gitCommitHash'
+		call git#commit#show(a:event["textsel"])
 	endif
 endfunction
-call git#ui#dbl_click('Commit:*', 'commit')
+call git#ui#event#on('commit', 'dblclick', funcref('git#commit#on_dblclick'))
+function git#commit#on_enter(event) abort
+	let l:linenr = line('.')
+	if a:event["synname"] == 'gitCommitHashes' || a:event["synname"] == 'gitCommit3Hashes'
+		call git#commit#show_diff(a:event["lnum"])
+	elseif a:event["synname"] == 'gitCommitHash'
+		call git#commit#show(expand('<cword>'))
+	endif
+endfunction
+call git#ui#event#on('commit', 'enter', funcref('git#commit#on_dblclick'))
 
