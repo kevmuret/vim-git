@@ -24,11 +24,7 @@ function git#history#graph(...) abort
 			call add(l:history_list, substitute(substitute(l:match, '[*\\/]', '|', 'g'), '[^|(]', ' ', 'g').l:match2)
 			call add(l:history_list, l:match[0:-2].l:history_line[len(l:match)+len(l:match2):])
 		else
-			let l:match = matchstr(l:history_line, '^[|\\/.\- *]\+$')
-			if l:match != ''
-				let l:history_line .= '  '
-			endif
-			call add(l:history_list, l:history_line)
+			call add(l:history_list, trim(l:history_line))
 		endif
 	endfor
 	if git#ui#openTab(l:history_bufname)
