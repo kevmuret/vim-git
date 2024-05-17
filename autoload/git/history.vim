@@ -47,9 +47,6 @@ function git#history#graph(...) abort
 	call git#ui#end_loading(l:history_bufname)
 endfunction
 
-if !exists('g:git_history_max_follow_graph')
-	let g:git_history_max_follow_graph = 10000
-endif
 function git#history#on_dblclick(event) abort
 	if a:event["synname"] == 'gitGraphHash'
 		call git#commit#show(a:event["textsel"])

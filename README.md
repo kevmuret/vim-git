@@ -23,7 +23,7 @@ Use this repo name : ```Plug 'kevmuret/vim-git'```.
 |Variable name|Type|Description|Default|
 |----|----|----|----|
 |g:git_cmd_path|String|Define path to the git command.|```'git'```|
-|g:git_history_max_follow_graph|Number|Number of lines to follow a graph when dbl clicking it increase/decrease with caution on a large repository.|```10000```|
+|g:git_history_max_follow_graph|Number|Number of lines to follow a graph when dbl clicking it increase/decrease with caution on a large repository.|```1000```|
 
 ## Commands
 |Command|Description|Arguments|
