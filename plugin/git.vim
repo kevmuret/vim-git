@@ -14,7 +14,7 @@ command! -nargs=0 GitGraphFile call git#history#graph_file(expand('%'))
 command! -nargs=* -complete=customlist,git#cmd#custom_list Git call git#cmd#execute(<f-args>)
 
 command! -nargs=0 GitDiffSigns call git#sign#place_file(expand('%'))
-autocmd BufEnter * :GitDiffSigns
-autocmd BufWrite * :GitDiffSigns
+autocmd BufWinEnter * :GitDiffSigns
+autocmd BufWritePost * :GitDiffSigns
 
 command! -nargs=* GitDiff call git#diff#buffer_versus(<f-args>)
