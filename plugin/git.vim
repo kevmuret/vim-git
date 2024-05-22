@@ -18,3 +18,4 @@ autocmd BufWinEnter * :GitDiffSigns
 autocmd BufWritePost * :GitDiffSigns
 
 command! -nargs=* GitDiff call git#diff#buffer_versus(<f-args>)
+command! -nargs=0 GitDiffList call git#diff#list_all('HEAD') | copen
