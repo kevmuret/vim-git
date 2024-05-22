@@ -4,17 +4,25 @@ let s:events_map = {
 	\ 'enter': '<Enter>',
 \ }
 function git#ui#event#bind_all(namespace) abort
-	for l:evtname in keys(s:events_map)
-		if exists('s:git_ui_events["'.a:namespace.'"]["'.l:evtname.'"]')
-			execute 'noremap '.s:events_map[l:evtname].' :call git#ui#event#trigger("'.l:evtname.'","'.a:namespace.'")<CR>'
+	for l:evtname in keys(s:git_ui_events[a:namespace])
+		if exists('s:events_map[l:evtname]')
+			let l:mapinput = s:events_map[l:evtname]
+		else
+			let l:mapinput = l:evtname
 		endif
+		execute 'noremap <buffer><silent> '.l:mapinput.' :call git#ui#event#trigger("'.l:evtname.'","'.a:namespace.'")<CR>'
 	endfor
 endfunction
 
 function git#ui#event#unbind_all(namespace) abort
-	for l:evtname in keys(s:events_map)
-		if mapcheck(s:events_map[l:evtname], 'n')
-			execute 'unmap '.s:events_map[l:evtname]
+	for l:evtname in keys(s:git_ui_events[a:namespace])
+		if exists('s:events_map[l:evtname]')
+			let l:mapinput = s:events_map[l:evtname]
+		else
+			let l:mapinput = l:evtname
+		endif
+		if mapcheck(l:mapinput, 'n')
+			execute 'unmap '.l:mapinput
 		endif
 	endfor
 endfunction
