@@ -37,6 +37,7 @@ function git#history#graph(...) abort
 		setlocal noswapfile
 		setlocal nobuflisted
 		setlocal buftype=nofile
+		setlocal nonumber
 		execute 'file '.l:history_bufname
 	endif
 	setlocal ma
