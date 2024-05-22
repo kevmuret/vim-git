@@ -242,16 +242,14 @@ function git#commit#popup_menu(cmd_options, action) abort
 endfunction
 
 function git#commit#on_dblclick(event) abort
-	let l:linenr = line('.')
-	if a:event["synname"] == 'gitCommitHashes' || a:event["synname"] == 'gitCommit3Hashes'
-		call git#commit#show_diff(a:event["lnum"])
-	elseif a:event["synname"] == 'gitCommitHash'
+	if a:event["vsynname"] == 'gitCommitHashes' || a:event["vsynname"] == 'gitCommit3Hashes'
+		call git#commit#show_diff(a:event["vlnum"])
+	elseif a:event["vsynname"] == 'gitCommitHash'
 		call git#commit#show(a:event["textsel"])
 	endif
 endfunction
 call git#ui#event#on('commit', 'dblclick', funcref('git#commit#on_dblclick'))
 function git#commit#on_enter(event) abort
-	let l:linenr = line('.')
 	if a:event["synname"] == 'gitCommitHashes' || a:event["synname"] == 'gitCommit3Hashes'
 		call git#commit#show_diff(a:event["lnum"])
 	elseif a:event["synname"] == 'gitCommitHash'

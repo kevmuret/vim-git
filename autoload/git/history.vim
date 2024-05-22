@@ -44,18 +44,17 @@ function git#history#graph(...) abort
 endfunction
 
 function git#history#on_dblclick(event) abort
-	if a:event["synname"] == 'gitGraphHash'
+	if a:event["vsynname"] == 'gitGraphHash'
 		call git#commit#show(a:event["textsel"])
-	elseif getline('.')[a:event["col"]-1] != ' ' && a:event["synname"] == 'gitGraph' || a:event["synname"] == 'gitGraphHL'
-		call s:FollowGraphFrom(a:event["lnum"], a:event["col"])
+	elseif getline('.')[a:event["col"]-1] != ' ' && a:event["vsynname"] == 'gitGraph' || a:event["vsynname"] == 'gitGraphHL'
+		call s:FollowGraphFrom(a:event["vlnum"], a:event["vcol"])
 	endif
 endfunction
 call git#ui#event#on('history', 'dblclick', funcref('git#history#on_dblclick'))
 function git#history#on_enter(event) abort
-	echom a:event
 	if a:event["synname"] == 'gitGraphHash'
 		call git#commit#show(expand('<cword>'))
-	elseif getline('.')[a:event["col"]-1] != ' ' && a:event["synname"] == 'gitGraph' || a:event["synname"] == 'gitGraphHL'
+	elseif getline(a:event['lnum'])[a:event["col"]-1] != ' ' && a:event["synname"] == 'gitGraph' || a:event["synname"] == 'gitGraphHL'
 		call s:FollowGraphFrom(a:event["lnum"], a:event["col"])
 	endif
 endfunction

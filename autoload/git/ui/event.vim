@@ -21,19 +21,26 @@ endfunction
 
 function git#ui#event#trigger(evtname, namespace) abort
 	let l:lnum = line('.')
-	let l:col = col("'<")
-	let l:colend = col("'>")
-	if !l:col
-		let l:col = col('.')
-	endif
-	let l:textsel = getline(l:lnum)[l:col-1:l:colend-1]
+	let l:col = col(".")
+	let l:vlnum = line("'<")
+	let l:vlnumend = line("'<")
+	let l:vcol = col("'<")
+	let l:vcolend = col("'>")
+	let l:textsel = getline(l:lnum)[l:vcol-1:l:vcolend-1]
 	let l:synstack = synstack(l:lnum, l:col)
+	let l:vsynstack = synstack(l:vlnum, l:vcol)
+	let l:vsynstackend = synstack(l:vlnumend, l:vcolend)
 	call s:git_ui_events[a:namespace][a:evtname]({
 		\ 'lnum': l:lnum,
 		\ 'col': l:col,
-		\ 'colend': l:colend,
+		\ 'vlnum': l:vlnum,
+		\ 'vlnumend': l:vlnumend,
+		\ 'vcol': l:vcol,
+		\ 'vcolend': l:vcolend,
 		\ 'textsel': l:textsel,
 		\ 'synname': len(l:synstack) < 1 ? '' : synIDattr(l:synstack[len(l:synstack) - 1], 'name'),
+		\ 'vsynname': len(l:vsynstack) < 1 ? '' : synIDattr(l:vsynstack[len(l:vsynstack) - 1], 'name'),
+		\ 'vsynnameend': len(l:vsynstackend) < 1 ? '' : synIDattr(l:vsynstackend[len(l:vsynstackend) - 1], 'name'),
 	\ })
 endfunction
 
