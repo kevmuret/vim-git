@@ -2,8 +2,6 @@ if !exists('main_syntax')
 	let main_syntax = 'gitcommit'
 endif
 
-runtime! syntax/diff.vim
-unlet b:current_syntax
 runtime! syntax/git_common.vim
 
 syn region gitCommitLine  	oneline keepend matchgroup=gitCommitDecoration start="[┌│└]" end="$" contains=@gitCommitLineCluster
