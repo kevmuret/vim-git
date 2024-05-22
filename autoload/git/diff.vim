@@ -1,5 +1,5 @@
 function git#diff#buffer_versus(...) abort
-	let l:file_path = expand('%')
+	let l:file_path = git#utils#get_git_relative_path(expand('%'))
 	if len(a:000) == 0
 		let l:rev = 'HEAD'
 	else
