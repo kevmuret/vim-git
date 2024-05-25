@@ -25,9 +25,10 @@ function git#history#graph(...) abort
 	endif
 	let l:history_bufname = 'Git graph: '.l:history_args
 	call git#ui#start_loading(l:history_bufname)
-	let l:history = git#system#call_list("log --graph --pretty='%d %h <%an>	%ad	%s' --date='format:%Y-%m-%d %H:%M:%S' ".l:history_args)
+	let l:history = git#system#call_list("log --graph --pretty='%d %h (%S) <%an>	%ad	%s' --date='format:%Y-%m-%d %H:%M:%S' ".l:history_args)
 	let l:history_list = []
 	for l:history_line in l:history
+		let l:history_line = substitute(l:history_line, '(refs/\(heads\|remotes\)/\([^)]\+\))', '(\2)', '')
 		let l:match = matchstr(l:history_line, '^[|\\/.\- *]\+(')
 		if l:match != ''
 			let l:match2 = matchstr(l:history_line[len(l:match):], '^[^)]\+)')
