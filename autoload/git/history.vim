@@ -7,11 +7,15 @@ function git#history#file(file_path) abort
 		\ , 'show'
 	\ )
 endfunction
-function git#history#graph_file(file_path) abort
-	call git#history#graph([
+function git#history#graph_file(file_path, ...) abort
+	call call('git#history#graph', extend(copy(a:000)
+	\ , [
 		\ '--follow',
-		\ git#utils#get_git_relative_path(a:file_path)
-	\ ])
+	\	git#utils#get_git_relative_path(a:file_path),
+	\ ]))
+endfunction
+function git#history#graph_buffer(...) abort
+	call call('git#history#graph_file', extend([expand('%')], copy(a:000)))
 endfunction
 function git#history#graph(...) abort
 	if a:0 == 0
