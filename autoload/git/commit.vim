@@ -59,6 +59,7 @@ function git#commit#parse_file(line) abort
 		let s:parsed_commit['nfiles'] += 1
 		call add(s:parsed_commit['files'], {
 			\ 'type': l:type,
+			\ 'is_submodule': l:infos_modes[1] == '160000',
 			\ 'path': l:infos_files[len(l:infos_files) > 1 ? 1 : 0],
 			\ 'old_path': len(l:infos_files) > 1 ? l:infos_files[0] : '',
 			\ 'old_hash': l:infos_hashes[0],
@@ -188,7 +189,13 @@ function git#commit#show(hash) abort
 			elseif l:file['type'] == 'delete'
 				let l:top_text .= '│-'
 			endif
-			let l:top_text .= "\t".l:file['old_hash'].(l:file['old_hash2'] != '' ? ','.l:file['old_hash2'] : '').'..'.l:file['new_hash']."\t".l:file['path']."\n"
+			let l:top_text .= "\t"
+			if l:file['is_submodule']
+				let l:top_text .= 'submodule@'.l:file['new_hash']
+			else
+				let l:top_text .= l:file['old_hash'].(l:file['old_hash2'] != '' ? ','.l:file['old_hash2'] : '').'..'.l:file['new_hash']
+			endif
+			let l:top_text .= "\t".l:file['path']."\n"
 			if l:file['old_path'] != ''
 				let l:top_text .= "│\t\t\trenamed from: ".l:file['old_path']."\n"
 			endif

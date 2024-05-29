@@ -13,11 +13,13 @@ syn region gitCommitFileEdit	matchgroup=DiffChange contained	keepend start="🖉
 syn region gitCommitFileNew	matchgroup=DiffAdd contained	keepend start="+\t" end="$" contains=@gitCommitFileLine
 syn region gitCommitFileDelete	matchgroup=DiffDelete contained	keepend start="-\t" end="$" contains=@gitCommitFileLine
 
-syn cluster gitCommitFileLine contains=gitCommitHashes,gitCommit3Hashes,gitCommitFile
+syn cluster gitCommitFileLine contains=gitCommitHashes,gitCommit3Hashes,gitCommitModule,gitCommitFile
 
 syn match gitCommitFile		contained "[^\t]\+$"
 syn match gitCommit3Hashes		contained "[0-9a-f]\+,[0-9a-f]\+\.\.[0-9a-f]\+"
 syn match gitCommitHashes		contained "[0-9a-f]\+\.\.[0-9a-f]\+"
+syn match gitCommitModule	contained "submodule@[0-9a-f]\{7,\}" contains=gitCommitModuleHash
+syn match gitCommitModuleHash	contained "[0-9a-f]\{7,\}"
 
 hi def link gitCommitDecoration	NonText
 hi def link gitCommitHeader	Special
@@ -25,3 +27,5 @@ hi def link gitCommitIcon	SpecialKey
 hi def link gitCommitFile	Directory
 hi def link gitCommitHashes	Constant
 hi def link gitCommit3Hashes	Constant
+hi def link gitCommitModule	SpecialKey
+hi def link gitCommitModuleHash	gitCommitHash
