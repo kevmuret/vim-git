@@ -1,4 +1,6 @@
 function git#diff#buffer_versus(...) abort
+	let l:save_cursor = getcurpos()
+	let l:save_winnr = winnr()
 	let l:file_path = git#utils#get_git_relative_path(expand('%'))
 	if len(a:000) == 0
 		let l:rev = 'HEAD'
@@ -17,6 +19,8 @@ function git#diff#buffer_versus(...) abort
 	delete
 	setlocal noma
 	difft
+	call win_gotoid(win_getid(l:save_winnr + 1))
+	call setpos('.', l:save_cursor)
 endfunction
 function git#diff#list_all(refname='HEAD') abort
 	let l:lines = git#system#call_list('diff -u '.a:refname)
