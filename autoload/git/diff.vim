@@ -22,8 +22,13 @@ function git#diff#buffer_versus(...) abort
 	call win_gotoid(win_getid(l:save_winnr + 1))
 	call setpos('.', l:save_cursor)
 endfunction
-function git#diff#list_all(refname='HEAD') abort
-	let l:lines = git#system#call_list('diff -u '.a:refname)
+function git#diff#list_all(...) abort
+	if len(a:000) == 0
+		let l:rev = 'HEAD'
+	else
+		let l:rev = a:000[0]
+	endif
+	let l:lines = git#system#call_list('diff -u '.l:rev)
 	let l:parser_state = git#parser#diff#init()
 	let l:Parser_fn = funcref('git#parser#diff#parse_file', [l:parser_state])
 	for l:line in l:lines
