@@ -264,5 +264,5 @@ function git#commit#on_enter(event) abort
 		call git#commit#show(expand('<cword>'))
 	endif
 endfunction
-call git#ui#event#on('commit', 'enter', funcref('git#commit#on_dblclick'))
+call git#ui#event#on('commit', 'enter', funcref('git#commit#on_enter'))
 
