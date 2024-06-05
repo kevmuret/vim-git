@@ -149,7 +149,7 @@ function git#commit#show_diff(lineid) abort
 		let l:hashes = split(l:line[1], '\.\.')
 		let l:bleft_text = git#system#call('show '.l:hashes[0])
 		call git#ui#split_three(s:null, {
-			\ 'text': l:bright_text,
+			\ 'text': l:bleft_text,
 			\ 'name': join(l:hashes, ',').'/'.l:line[2]
 		\}, {
 			\ 'text': '',
