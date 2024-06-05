@@ -234,8 +234,9 @@ function git#cmd#custom_list(arglead, cmd, curpos)
 			if exists('s:git_commands[l:cmd_name]["complete_func"]')
 				let l:func_choices = v:null
 				if type(s:git_commands[l:cmd_name]["complete_func"]) == type([])
-					if exists('s:git_commands[l:cmd_name]["complete_func"][l:arg_num]')
-						let l:func_choices = s:git_commands[l:cmd_name]["complete_func"][l:arg_num]
+					let l:complete_num = min([l:arg_num, len(s:git_commands[l:cmd_name]["complete_func"]) - 1])
+					if exists('s:git_commands[l:cmd_name]["complete_func"][l:complete_num]')
+						let l:func_choices = s:git_commands[l:cmd_name]["complete_func"][l:complete_num]
 					endif
 				else
 					let l:func_choices = s:git_commands[l:cmd_name]["complete_func"]
