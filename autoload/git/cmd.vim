@@ -15,6 +15,7 @@ let s:git_commands = {
 	\ 'rebase': {
 		\ 'options': {
 			\ '-i': v:null,
+			\ '--continue': v:null,
 		\ },
 		\ 'complete_func': 'git#branch#custom_list',
 	\ },
@@ -34,6 +35,7 @@ let s:git_commands = {
 		\ 'options': {
 			\ '-m': v:null,
 			\ '--amend': v:null,
+			\ '--interactive': v:null,
 		\ },
 	\ },
 	\ 'fetch': {
