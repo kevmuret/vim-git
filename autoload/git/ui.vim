@@ -27,6 +27,7 @@ function git#ui#win_apply_options(options) abort
 			execute 'file '.a:options['name']
 			filetype detect
 			setlocal noswapfile
+			setlocal buftype=nofile
 		else
 			new
 			call win_gotoid(win_getid(winnr() + 1))

@@ -209,6 +209,7 @@ function git#commit#show(hash) abort
 		setlocal foldexpr=getline(v:lnum)=~'^[┌│└]'?0:1
 		setlocal syn=git_commit
 		setlocal nonumber
+		setlocal nolist
 		call git#ui#end_loading(l:commit_bufname)
 	endif
 	call git#ui#start('Commit:*', 'commit')
