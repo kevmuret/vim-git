@@ -29,4 +29,7 @@ autocmd BufWritePost * :GitDiffSigns
 command! -nargs=* -complete=customlist,git#cmd#rev_custom_list GitDiff call git#diff#buffer_versus(<f-args>)
 command! -nargs=* -complete=customlist,git#cmd#rev_custom_list GitDiffList call git#diff#list_all(<f-args>) | copen
 
+command! -nargs=0 GitStatus call git#status#open()
+command! -range -nargs=0 GitStatusAdd call git#status#git_add_multi(<line1>,<line2>)
+
 command! -nargs=0 GitAutoFetch call git#auto_fetch#toggle()
