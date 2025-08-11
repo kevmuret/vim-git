@@ -4,6 +4,15 @@ endif
 if !exists('g:git_history_max_follow_graph')
 	let g:git_history_max_follow_graph = 1000
 endif
+if !exists('g:git_auto_fetch_interval')
+	let g:git_auto_fetch_interval = 60000
+endif
+if !exists('g:git_auto_fetch_args')
+	let g:git_auto_fetch_args = ''
+endif
+if !exists('g:git_auto_fetch')
+	let g:git_auto_fetch = v:false
+endif
 
 command! -nargs=1 -complete=customlist,git#cmd#rev_custom_list GitCommitShow call git#commit#show(<f-args>)
 command! -range GitLogLine call git#history#at_line(<line1>,<line2>,expand('%'))
@@ -19,3 +28,5 @@ autocmd BufWritePost * :GitDiffSigns
 
 command! -nargs=* -complete=customlist,git#cmd#rev_custom_list GitDiff call git#diff#buffer_versus(<f-args>)
 command! -nargs=* -complete=customlist,git#cmd#rev_custom_list GitDiffList call git#diff#list_all(<f-args>) | copen
+
+command! -nargs=0 GitAutoFetch call git#auto_fetch#toggle()
