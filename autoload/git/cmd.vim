@@ -264,7 +264,7 @@ endfunction
 function git#cmd#add_custom_list(arglead, cmd, curpos)
 	let l:result = []
 	for l:addline in git#system#call_list('status -s --untracked=all')
-		let l:add_infos = matchlist(l:addline, '^.[MU] \(.\+\)')
+		let l:add_infos = matchlist(l:addline, '^.[MU?] \(.\+\)')
 		if len(l:add_infos) > 0
 			call git#cmd#custom_list_add_result(l:result, a:arglead, l:add_infos[1], '/')
 		endif
