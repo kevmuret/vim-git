@@ -1,6 +1,8 @@
 function git#parser#diff#init(filename=v:null, callback=v:null) abort
 	return {
 		\ 'filename': a:filename,
+		\ 'deleted_file': v:false,
+		\ 'added_file': v:false,
 		\ 'offset': 0,
 		\ 'old_offset': 0,
 		\ 'old_linenum': 0,
@@ -19,8 +21,18 @@ function git#parser#diff#init(filename=v:null, callback=v:null) abort
 endfunction
 function git#parser#diff#parse_file(state, line) abort
 	let l:type = matchstr(a:line, '^\(diff \|index \|new \|--- \|+++ \|@@ \)')
-	if l:type == '+++ '
-		let a:state['filename'] = strpart(a:line, 6)
+	if l:type == '--- '
+		if strpart(a:line, 4) != '/dev/null'
+			let a:state['filename'] = strpart(a:line, 6)
+		else
+			let a:state['added_file'] = v:true
+		endif
+	elseif l:type == '+++ '
+		if strpart(a:line, 4) != '/dev/null'
+			let a:state['filename'] = strpart(a:line, 6)
+		else
+			let a:state['deleted_file'] = v:true
+		endif
 	elseif l:type == '@@ '
 		return git#parser#diff#parse_diff(a:state, a:line)
 	endif
@@ -41,24 +53,24 @@ function s:DiffAddEntry(state, lnum, nlines, type, text) abort
 	endif
 endfunction
 function git#parser#diff#parse_diff(state, line) abort
-	let l:type = matchstr(a:line, '^\(diff \|@@ \|+\|-\| \)')
+	let l:type = matchstr(a:line, '^\(diff \|@@ \|+\|-\| \|\\\)')
 	if l:type == ''
-		throw 'Invalid diff line: '.a:line
+		throw 'Invalid diff line: "'.a:line.'"'
 	endif
 	if l:type == 'diff '
 		call git#parser#diff#end_file(a:state)
 		return git#parser#diff#parse_file(a:state, a:line)
 	elseif l:type == '@@ '
-		let l:linenum_infos = matchlist(a:line, '^@@ -\(\d\+\),\(\d\+\) +\(\d\+\),\(\d\+\)')
+		let l:linenum_infos = matchlist(a:line, '^@@ -\(\d\+\)\(,\(\d\+\)\)\? +\(\d\+\)\(,\(\d\+\)\)\?')
 		if len(l:linenum_infos) == 0
 			throw 'Invalid diff line: '.a:line
 		endif
 		let l:old_offset = str2nr(l:linenum_infos[1])
 		let l:old_linenum = str2nr(l:linenum_infos[1])
-		let l:old_length = str2nr(l:linenum_infos[2])
-		let l:new_offset = str2nr(l:linenum_infos[3])
-		let l:new_linenum = str2nr(l:linenum_infos[3])
-		let l:new_length = str2nr(l:linenum_infos[4])
+		let l:old_length = str2nr(l:linenum_infos[3])
+		let l:new_offset = str2nr(l:linenum_infos[4])
+		let l:new_linenum = str2nr(l:linenum_infos[6])
+		let l:new_length = str2nr(l:linenum_infos[6])
 		let a:state['offset'] = l:new_offset
 		let a:state['old_offset'] = l:old_offset
 		let a:state['old_linenum'] = l:old_linenum
@@ -132,7 +144,7 @@ function git#parser#diff#parse_diff(state, line) abort
 					\ a:state,
 					\ a:state['offset'] - 1,
 					\ a:state['del_nlines'],
-					\ 'D',
+					\ (a:state['deleted_file'] ? '-' : 'D'),
 					\ a:state['del_lines'][0]
 				\ )
 			endif
@@ -143,7 +155,7 @@ function git#parser#diff#parse_diff(state, line) abort
 				\ a:state,
 				\ a:state['offset'],
 				\ a:state['add_nlines'],
-				\ 'A',
+				\ (a:state['added_file'] ? '+' : 'A'),
 				\ a:state['add_lines'][0]
 			\ )
 			let a:state['offset'] += a:state['add_nlines']

@@ -34,6 +34,8 @@ endfunction
 function git#commit#parse_message(line) abort
 	if a:line == ''
 		return funcref('git#commit#parse_file')
+	elseif a:line =~ '^:'
+		return git#commit#parse_file(a:line)
 	else
 		let s:parsed_commit['message'] .= a:line."\n"
 	endif
