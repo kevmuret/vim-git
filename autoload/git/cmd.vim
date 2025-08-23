@@ -104,13 +104,25 @@ function s:cmd_exec(cmd, from) abort
 	let s:git_cmd_last = l:cmd
 	let s:git_cmd_chain_eof = l:eof_cmd
 	let s:git_cmd_errors = []
-	let s:git_cmd_termid = term_start(l:cmd, {
-		\ 'err_cb': funcref('s:cmd_error'),
-		\ 'exit_cb': funcref('s:cmd_exit'),
-		\ 'term_finish': 'open',
-		\ 'norestore': v:true,
-	\ })
-	let s:git_cmd_jobid = term_getjob(s:git_cmd_termid)
+	if has('nvim')
+		new
+		startinsert
+		let s:line_chunk = ''
+		let s:git_cmd_termid = jobstart(l:cmd, {
+			\ 'term': v:true,
+			\ 'on_stderr': funcref('s:cmd_error'),
+			\ 'on_exit': funcref('s:cmd_exit'),
+		\ })
+		let s:git_cmd_jobid = s:git_cmd_termid
+	else
+		let s:git_cmd_termid = term_start(l:cmd, {
+			\ 'err_cb': funcref('s:cmd_error'),
+			\ 'exit_cb': funcref('s:cmd_exit'),
+			\ 'term_finish': 'open',
+			\ 'norestore': v:true,
+		\ })
+		let s:git_cmd_jobid = term_getjob(s:git_cmd_termid)
+	endif
 endfunction
 function s:cmd_append_output(msg)
 	let l:winid = bufwinid(s:git_cmd_bufnr)
@@ -130,7 +142,23 @@ endfunction
 function s:cmd_error(ch, msg)
 	call s:cmd_append_output(': '.a:msg)
 endfunction
-function s:cmd_exit(jobid, status)
+let s:line_chunk = ''
+function s:cmd_error_neovim(ch, msg, event)
+	if len(a:msg) > 1
+		for l:line in extend([s:line_chunk.a:msg[0]], a:msg[1:-2])
+			call s:cmd_append_output(': '.l:line)
+		endfor
+		let s:line_chunk .= a:msg[-1]
+	else
+		let s:line_chunk .= a:msg[0]
+	endif
+endfunction
+function s:cmd_exit(jobid, status, event)
+	" a:event only apply to neovim
+	if has('nvim') && s:line_chunk != '' " Neovim job get an new line at the end skip it
+		call s:cmd_append_output(': '.s:line_chunk)
+		let s:line_chunk = ''
+	endif
 	if a:status != 0
 		call s:cmd_append_output(' returned with status: '.a:status)
 	endif

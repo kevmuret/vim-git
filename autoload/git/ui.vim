@@ -179,8 +179,12 @@ endfunction
 function git#ui#openTab(tabname) abort
 	let l:tabs = git#ui#listTabs(a:tabname)
 	if empty(l:tabs)
-		silent tabnew
-		execute 'silent file '.a:tabname
+		if has('nvim')
+			execute 'tabedit '.a:tabname
+		else
+			silent tabnew
+			execute 'silent file '.a:tabname
+		endif
 		return v:true
 	else
 		let l:tab = get(l:tabs, 0)
@@ -192,6 +196,9 @@ endfunction
 let s:loading_id = 0
 let s:loading_time = 0
 function git#ui#start_loading(name) abort
+	if has('nvim') " Neovim doesn't implement popup_* vim functions
+		return 0
+	endif
 	let s:loading_id = popup_notification('Loading... '.a:name, {
 		\ 'pos': 'center',
 		\ 'time':3000,
@@ -201,10 +208,12 @@ function git#ui#start_loading(name) abort
 	return s:loading_id
 endfunction
 function git#ui#end_loading(name) abort
-	call popup_close(s:loading_id)
-	if localtime() - s:loading_time > 100
-		call popup_notification('Loaded '.a:name, {'pos': 'center','time':500})
-		redraw!
+	if s:loading_id != 0
+		call popup_close(s:loading_id)
+		if localtime() - s:loading_time > 100
+			call popup_notification('Loaded '.a:name, {'pos': 'center','time':500})
+			redraw!
+		endif
 	endif
 endfunction
 

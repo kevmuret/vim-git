@@ -1,18 +1,43 @@
 let s:git_fetch_output = []
 let s:git_auto_fetch_jobid = 0
-function git#auto_fetch#read_output(chid, line) abort
-	call add(s:git_fetch_output, a:line)
+let s:line_chunk = ''
+function git#auto_fetch#read_output(chid, line, event) abort
+	" a:event only apply to neovim
+	if has('nvim')
+		let s:line_chunk .= a:line[0]
+		if len(a:line) > 1
+			for l:line in extend([s:line_chunk], a:line[1:-2])
+				call add(s:git_fetch_output, l:line)
+			endfor
+			let s:line_chunk = a:line[-1]
+		endif
+	else
+		call add(s:git_fetch_output, a:line)
+	endif
 endfunction
 function git#auto_fetch#fetch(timerid) abort
 	let s:git_fetch_output = []
-	let l:jobid = job_start(g:git_cmd_path.' --no-optional-locks fetch '.g:git_auto_fetch_args, {
-		\ 'exit_cb': 'git#auto_fetch#fetch_exit',
-		\ 'out_cb': 'git#auto_fetch#read_output',
-		\ 'err_cb': 'git#auto_fetch#read_output',
-	\ })
+	if has('nvim')
+		call jobstart(g:git_cmd_path.' --no-optional-locks fetch '.g:git_auto_fetch_args, {
+			\ 'on_exit': 'git#auto_fetch#fetch_exit',
+			\ 'on_stdout': 'git#auto_fetch#read_output',
+			\ 'on_stderr': 'git#auto_fetch#read_output',
+		\ })
+	else
+		call job_start(g:git_cmd_path.' --no-optional-locks fetch '.g:git_auto_fetch_args, {
+			\ 'exit_cb': 'git#auto_fetch#fetch_exit',
+			\ 'out_cb': 'git#auto_fetch#read_output',
+			\ 'err_cb': 'git#auto_fetch#read_output',
+		\ })
+	endif
 endfunction
-function git#auto_fetch#fetch_exit(jobid, status) abort
+function git#auto_fetch#fetch_exit(jobid, status, event) abort
+	" a:event only apply to neovim
+	if has('nvim')
+		call add(s:git_fetch_output, s:line_chunk)
+	endif
 	if len(s:git_fetch_output) > 0
+	\ && !has('nvim') " Neovim doest not implement popup_ functions TODO: use connect it with a popup plugin.
 		let l:popup_options = {
 			\ 'pos': 'botright',
 			\ 'line': &lines - 1,
